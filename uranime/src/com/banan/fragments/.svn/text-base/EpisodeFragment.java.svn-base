@@ -1,0 +1,70 @@
+package com.banan.fragments;
+
+import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockFragment;
+import com.banan.anime.R;
+import com.banan.entities.Episode;
+import com.banan.providers.DBHelper;
+import com.banan.providers.EpisodeProvider;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+public class EpisodeFragment extends SherlockFragment{
+		private int episodeID;
+		public static Fragment newInstance(int episodeID) {
+			EpisodeFragment frag = new EpisodeFragment();
+			
+			frag.episodeID = episodeID;
+			
+			return frag;
+		}
+		
+		/*public EpisodeFragment(){
+			super();
+		}*/	
+		
+		@Override
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+			
+			View v = inflater.inflate(R.layout.episode, container, false);
+			
+			ActionBar ab = getSherlockActivity().getSupportActionBar();
+			
+			Cursor episode = getActivity().managedQuery(
+					EpisodeProvider.CONTENT_URI, Episode.projection, DBHelper.EPISODE_ID_COL+"="+episodeID, null,null);
+
+			if(!episode.moveToFirst())
+				return null;
+
+			String title = episode.getString(episode.getColumnIndexOrThrow(DBHelper.EPISODE_TITLE_COL));
+			String description = episode.getString(episode.getColumnIndexOrThrow(DBHelper.EPISODE_DESC_COL));
+			
+			getActivity().setTitle(title);
+			
+			ImageView seen = (ImageView) v.findViewById(R.id.seenImage);
+			
+			if(episode.isNull(episode.getColumnIndexOrThrow(DBHelper.EPISODE_SEEN_COL)))
+				seen.setVisibility(View.INVISIBLE);
+			else
+				seen.setVisibility(View.VISIBLE);
+			
+			TextView titleView = (TextView) v.findViewById(R.id.episode_title);
+			TextView descriptionView = (TextView) v.findViewById(R.id.episode_desc);
+			
+			titleView.setText(title);
+			descriptionView.setText(description);
+			
+			return v;
+		}
+		
+		@Override
+		public void onSaveInstanceState(Bundle outState) {
+			super.onSaveInstanceState(outState);
+		}
+}

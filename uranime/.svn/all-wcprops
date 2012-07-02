@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/mobile_h11_tvdb/!svn/ver/112/branches/anime/src
+END
+default.properties
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/mobile_h11_tvdb/!svn/ver/51/branches/anime/src/default.properties
+END
+.classpath
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/mobile_h11_tvdb/!svn/ver/112/branches/anime/src/.classpath
+END
+project.properties
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/mobile_h11_tvdb/!svn/ver/112/branches/anime/src/project.properties
+END
+lint.xml
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/mobile_h11_tvdb/!svn/ver/53/branches/anime/src/lint.xml
+END
+AndroidManifest.xml
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/mobile_h11_tvdb/!svn/ver/110/branches/anime/src/AndroidManifest.xml
+END

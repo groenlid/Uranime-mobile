@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:ads="http://schemas.android.com/apk/lib/com.google.ads"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+    <LinearLayout android:layout_width="fill_parent"
+        android:id="@+id/main"
+        android:orientation="vertical"
+        android:layout_height="wrap_content">
+        <GridView xmlns:android="http://schemas.android.com/apk/res/android"
+		    android:layout_width="fill_parent" 
+		    android:layout_height="fill_parent"
+		    android:numColumns="auto_fit"
+		    android:verticalSpacing="2dp"
+		    android:horizontalSpacing="2dp"
+		    android:padding="0dp"
+		    android:layout_marginTop="5dp"
+		    android:fastScrollEnabled="true"
+		    android:clipToPadding="false"
+		    android:smoothScrollbar="true"
+		    android:stretchMode="columnWidth"
+		    android:columnWidth="100dp"
+		    android:gravity="center"
+		    android:id="@+id/gridview"
+		    android:clipChildren="true"
+		    android:alwaysDrawnWithCache="true"
+		    >
+		</GridView>
+    </LinearLayout>
+    
+    <LinearLayout android:layout_width="fill_parent"
+        android:id="@+id/ad_layout"
+        android:orientation="vertical"
+        android:gravity="bottom"
+        android:layout_alignParentBottom="true"
+        android:layout_height="wrap_content">
+        
+    
+  <com.google.ads.AdView android:id="@+id/ad"
+                         android:layout_width="wrap_content"
+                         android:layout_height="wrap_content"
+                         ads:adUnitId="a14f9c8699042f4"
+                         ads:adSize="SMART_BANNER"
+                         android:gravity="bottom"
+                         android:layout_alignParentBottom="true"
+                         ads:testDevices="TEST_EMULATOR, 63456F8C03C88999B759C738231FD4D6"
+                         ads:loadAdOnCreate="true"/>
+
+	</LinearLayout>
+
+</RelativeLayout>

@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/mobile_h11_tvdb/!svn/ver/105/branches/anime/src/res/menu
+END
+context_episode.xml
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/mobile_h11_tvdb/!svn/ver/105/branches/anime/src/res/menu/context_episode.xml
+END
+episode_menu.xml
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/mobile_h11_tvdb/!svn/ver/85/branches/anime/src/res/menu/episode_menu.xml
+END
+anime_menu.xml
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/mobile_h11_tvdb/!svn/ver/93/branches/anime/src/res/menu/anime_menu.xml
+END
+animelist_menu.xml
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/mobile_h11_tvdb/!svn/ver/94/branches/anime/src/res/menu/animelist_menu.xml
+END
+dashboard_menu.xml
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/mobile_h11_tvdb/!svn/ver/84/branches/anime/src/res/menu/dashboard_menu.xml
+END

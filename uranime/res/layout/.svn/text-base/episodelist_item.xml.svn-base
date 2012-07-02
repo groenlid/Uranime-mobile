@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>	
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:scaleType="matrix" >
+
+    	<!-- This is the lighter border -->
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+   		<View 
+        	android:layout_width="fill_parent"
+			android:layout_height="1dip"
+			android:background="@color/lightgrey_border" />
+        <com.banan.UIElements.CheckBox
+            android:id="@+id/watchedCheckbox"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:padding="16dp" />
+
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/episode_details"
+        android:layout_width="fill_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+
+   		<View 
+        	android:layout_width="fill_parent"
+			android:layout_height="1dip"
+			android:background="@color/lightgrey_border" />
+        <TextView
+            android:id="@+id/episode_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+			android:padding="8dp"
+            android:shadowColor="@+color/black"
+            android:shadowDy="3"
+            android:shadowRadius="1"
+            android:gravity="left"
+            android:maxLines="1"
+            android:text="Episode Name"
+            android:textColor="@color/white"
+            android:textSize="18sp"/>
+
+		<LinearLayout
+		    android:id="@+id/linearLayout2"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content" >
+			<TextView
+			    android:id="@+id/episode_number"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:layout_marginLeft="10dip"
+			    android:layout_marginTop="5dip"
+			    android:gravity="center"
+			    android:text="Episode Number"
+			    android:textSize="12dp" />
+			<TextView
+			    android:id="@+id/episode_date"
+			    android:layout_width="wrap_content"
+			    android:layout_height="wrap_content"
+			    android:layout_marginLeft="10dip"
+			    android:layout_marginTop="5dip"
+			    android:gravity="center"
+			    android:text="Date"
+			    android:textSize="12dp" />
+
+		</LinearLayout>
+
+    </LinearLayout>
+</LinearLayout>

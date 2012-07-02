@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item
+        android:id="@+id/menu_update"
+        android:icon="@drawable/ic_action_refresh"
+        android:showAsAction="ifRoom"
+        android:title="@string/menu_update_delta"/>
+    <item
+        android:id="@+id/menu_add"
+        android:icon="@drawable/ic_action_seen"
+        android:showAsAction="ifRoom"
+        android:title="@string/add_Show"/>
+    <item
+        android:id="@+id/menu_preferences"
+        android:icon="@drawable/ic_action_preferences"
+        android:showAsAction="never"
+        android:title="@string/preferences"/>
+    <item
+        android:id="@+id/menu_help"
+        android:icon="@drawable/ic_menu_help"
+        android:showAsAction="never"
+        android:title="@string/help"/>
+
+</menu>

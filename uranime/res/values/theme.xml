@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="TitlebarBackgroundStyle">
+        <item name="android:background">@drawable/topbar</item>
+    </style>
+    <style name="Theme.OTPMain" parent="android:Theme"> 
+        <item name="android:windowTitleBackgroundStyle">@style/TitlebarBackgroundStyle</item>
+    </style>
+</resources>
