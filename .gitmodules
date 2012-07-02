@@ -1,0 +1,9 @@
+[submodule "ActionbarSherlock"]
+	path = ActionbarSherlock
+	url = git://github.com/JakeWharton/ActionBarSherlock.git
+[submodule "ViewPagerIndicator"]
+	path = ViewPagerIndicator
+	url = git://github.com/JakeWharton/Android-ViewPagerIndicator.git
+[submodule "HoloEverywhere"]
+	path = HoloEverywhere
+	url = git://github.com/ChristopheVersieux/HoloEverywhere.git
