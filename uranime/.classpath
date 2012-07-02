@@ -7,6 +7,5 @@
 	<classpathentry kind="lib" path="libs/GoogleAdMobAdsSdk-6.0.0.jar"/>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="lib" path="/com_actionbarsherlock/libs/android-support-v4.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

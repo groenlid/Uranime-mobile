@@ -27,7 +27,6 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.viewpagerindicator.TabPageIndicator;
 import com.viewpagerindicator.TitlePageIndicator;
-import com.viewpagerindicator.TitleProvider;
 
 import android.app.ProgressDialog;
 import android.content.ContentValues;
@@ -147,7 +146,7 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
         return super.onCreateOptionsMenu(menu);
     }
 	
-	public class SearchPageAdapter extends FragmentPagerAdapter implements TitleProvider{
+	public class SearchPageAdapter extends FragmentPagerAdapter{
 
 		public SearchPageAdapter(FragmentManager fm) {
 			super(fm);
@@ -172,7 +171,7 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 			}
 		}*/
 		
-		public String getTitle(int position) {
+		public CharSequence getPageTitle(int position) {
 			return CONTENT[position % CONTENT.length].toUpperCase();
 		}
 	}

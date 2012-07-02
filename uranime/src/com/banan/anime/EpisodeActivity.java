@@ -17,7 +17,6 @@ import com.banan.providers.DBHelper;
 import com.banan.providers.EpisodeProvider;
 import com.banan.providers.RestService;
 import com.viewpagerindicator.TitlePageIndicator;
-import com.viewpagerindicator.TitleProvider;
 import com.actionbarsherlock.app.ActionBar;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
@@ -121,7 +120,7 @@ public class EpisodeActivity extends BaseActivity implements ActionBar.OnNavigat
 		return false;
 	}
 	
-	private class TitleFragmentAdapter extends FragmentPagerAdapter implements TitleProvider {
+	private class TitleFragmentAdapter extends FragmentPagerAdapter{
 		private Cursor episodes;
 		
 		public TitleFragmentAdapter(Cursor episodes,FragmentManager fm) {
@@ -129,7 +128,7 @@ public class EpisodeActivity extends BaseActivity implements ActionBar.OnNavigat
 			this.episodes = episodes;
 		}
 
-		public String getTitle(int position) {
+		public CharSequence getPageTitle(int position) {
 			if(episodes.moveToPosition(position))
 				if(episodes.getInt(episodes.getColumnIndexOrThrow(DBHelper.EPISODE_SPECIAL_COL))>0)
 					return "SPECIAL "+episodes.getInt(episodes.getColumnIndexOrThrow(DBHelper.EPISODE_NUMBER_COL));

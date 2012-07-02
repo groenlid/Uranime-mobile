@@ -1,13 +1,11 @@
 package com.banan.pagers;
 
 import com.banan.fragments.AnimeFragment;
-import com.viewpagerindicator.TitleProvider;
-
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 
-public class PagerShowAdapter extends FragmentPagerAdapter implements TitleProvider{
+public class PagerShowAdapter extends FragmentPagerAdapter{
 
 	public PagerShowAdapter(FragmentManager fm) {
 		super(fm);
@@ -32,7 +30,7 @@ public class PagerShowAdapter extends FragmentPagerAdapter implements TitleProvi
 		}
 	}*/
 	
-	public String getTitle(int position) {
+	public CharSequence getPageTitle(int position) {
 		return PagerShowAdapter.CONTENT[position % PagerShowAdapter.CONTENT.length].toUpperCase();
 	}
 	
