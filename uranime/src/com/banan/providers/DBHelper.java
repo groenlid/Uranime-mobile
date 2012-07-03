@@ -138,7 +138,7 @@ public class DBHelper extends SQLiteOpenHelper {
         		// Put in a list the existing columns
         		List<String> columns = DBHelper.GetColumns(db, EPISODE_TABLE);
         		//Backup table
-        		db.execSQL("ALTER table " + EPISODE_TABLE + " RENAME TO 'temp_" + EPISODE_TABLE + ";");
+        		db.execSQL("ALTER table " + EPISODE_TABLE + " RENAME TO temp_" + EPISODE_TABLE + ";");
         		
         		// Create the table with the new schema
         		this.onCreate(db);
