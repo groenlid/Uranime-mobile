@@ -1,6 +1,8 @@
 package com.banan.anime;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -11,6 +13,7 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.banan.entities.Constants;
 import com.banan.entities.Episode;
 import com.banan.fragments.EpisodeFragment;
 import com.banan.providers.DBHelper;
@@ -73,7 +76,10 @@ public class EpisodeActivity extends BaseActivity implements ActionBar.OnNavigat
 			{
 				ArrayList<String> param = new ArrayList<String>();
 				param.add(""+episodes.getInt(episodes.getColumnIndexOrThrow(DBHelper.EPISODE_ID_COL)));
-				param.add("true"); // Should rather be timestamp.
+				
+				param.add(Constants.timeToString(null));
+				//param.add("true"); // Should rather be timestamp.
+				
 				/** TODO: Convert to timestamp */
 				
 				Intent i = new Intent(this, RestService.class);

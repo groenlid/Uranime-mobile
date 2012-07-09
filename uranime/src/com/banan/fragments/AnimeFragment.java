@@ -351,7 +351,8 @@ public class AnimeFragment extends SherlockFragment {
 	{
 		ArrayList<String> param = new ArrayList<String>();
 		param.add(""+episodeID);
-		param.add("true"); // Should rather be timestamp.
+		param.add(Constants.timeToString(null));
+		//param.add("true"); // Should rather be timestamp.
 		
 		Intent i = new Intent(this.getActivity(), RestService.class);
 		if(seen)

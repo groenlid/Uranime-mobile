@@ -28,7 +28,7 @@ import android.widget.Toast;
 // Just an example from an old project.. Maybe we can use it?
 public class RestClient {
 	
-	private boolean debug = false;
+	private boolean debug = true;
 	private static RestClient instance;
 	private Context c;
 	

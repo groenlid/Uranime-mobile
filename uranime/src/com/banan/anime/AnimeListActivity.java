@@ -1,6 +1,7 @@
 package com.banan.anime;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import com.actionbarsherlock.app.ActionBar;
@@ -10,11 +11,15 @@ import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.Window;
 import com.banan.entities.Anime;
 import com.banan.entities.Constants;
+import com.banan.fragments.SearchFragment;
 import com.banan.providers.AnimeProvider;
 import com.banan.providers.DBHelper;
 import com.banan.providers.RestService;
 import com.banan.anime.R;
+import com.google.ads.Ad;
+import com.google.ads.AdListener;
 import com.google.ads.AdRequest;
+import com.google.ads.AdRequest.ErrorCode;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
 import com.google.ads.mediation.admob.AdMobAdapterExtras;
@@ -47,7 +52,7 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-public class AnimeListActivity extends SherlockActivity implements ActionBar.OnNavigationListener
+public class AnimeListActivity extends SherlockActivity implements ActionBar.OnNavigationListener, AdListener
 {
 	//Global variables
 	 private static final int ACTION_BAR_SEARCH=0;
@@ -111,31 +116,35 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 		
 		});
 		
-		// ADS
-		AdView adView = (AdView)findViewById(R.id.ad);
-		//AdView adView = new AdView(this, AdSize.SMART_BANNER, "a14f9c8699042f4");
-		//AdView adView = (AdView) findViewById(R.id.ad);
-		
-		//LinearLayout layout = (LinearLayout)findViewById(R.id.ad_layout);
-		//layout.addView(adView);
-		AdRequest request = new AdRequest();
-		request.addTestDevice(AdRequest.TEST_EMULATOR);
-		request.addTestDevice("A8F41E5D323FF1649FD18C26E8F02EF8");    // My samsung galaxy s II
-		
-		// set colors
-		AdMobAdapterExtras extras = new AdMobAdapterExtras()
-			.addExtra("color_bg", "000000")
-			.addExtra("color_bg_top", "000000")
-			.addExtra("color_text", "eeeeee")
-			.addExtra("color_url", "eeeeee")
-			.addExtra("color_link", "eeeeee")
-			.addExtra("color_border", "555555");
-		
-		request.setNetworkExtras(extras);
-		
-	    // Initiate a generic request to load it with an ad
-	    adView.loadAd(request);
-		adView.invalidate();
+		long minTimeSinceAdClick = Calendar.getInstance().getTimeInMillis() - (1000 * 60 * 60);	
+		if(Constants.getLastAdClick(this) < minTimeSinceAdClick)
+		{
+			// ADS
+			AdView adView = (AdView)findViewById(R.id.ad);
+			//AdView adView = new AdView(this, AdSize.SMART_BANNER, "a14f9c8699042f4");
+			//AdView adView = (AdView) findViewById(R.id.ad);
+			
+			//LinearLayout layout = (LinearLayout)findViewById(R.id.ad_layout);
+			//layout.addView(adView);
+			AdRequest request = new AdRequest();
+			request.addTestDevice(AdRequest.TEST_EMULATOR);
+			
+			
+			// set colors
+			AdMobAdapterExtras extras = new AdMobAdapterExtras()
+				.addExtra("color_bg", "000000")
+				.addExtra("color_bg_top", "000000")
+				.addExtra("color_text", "eeeeee")
+				.addExtra("color_url", "eeeeee")
+				.addExtra("color_link", "eeeeee")
+				.addExtra("color_border", "555555");
+			
+			request.setNetworkExtras(extras);
+			adView.setAdListener(this);
+		    // Initiate a generic request to load it with an ad
+		    adView.loadAd(request);
+			adView.invalidate();
+		}
 	}
 	
 	@Override
@@ -316,5 +325,34 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 		
 		//Log.e("item",""+itemPosition + " " + itemId);
 		return false;
+	}
+
+	@Override
+	public void onDismissScreen(Ad ad) {
+		 Constants.setLastAdClick(this, Calendar.getInstance().getTimeInMillis());
+	}
+
+	@Override
+	public void onFailedToReceiveAd(Ad arg0, ErrorCode arg1) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onLeaveApplication(Ad arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onPresentScreen(Ad arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onReceiveAd(Ad arg0) {
+		// TODO Auto-generated method stub
+		
 	}
 }

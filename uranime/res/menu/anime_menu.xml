@@ -17,9 +17,15 @@
         android:title="@string/preferences"/>
     <item
         android:id="@+id/menu_seenall"
-        android:icon="@drawable/ic_action_seen"
-        android:showAsAction="never"
+        android:icon="@drawable/ic_menu_markall"
+        android:showAsAction="ifRoom"
         android:title="@string/mark_all_as_seen"/>
+    <item
+        android:id="@+id/menu_unseeall"
+        android:icon="@drawable/ic_menu_unmarkall"
+        android:showAsAction="ifRoom"
+        android:title="@string/mark_all_as_unseen"
+        />
     <item
         android:id="@+id/menu_help"
         android:icon="@drawable/ic_menu_help"

@@ -2,6 +2,8 @@ package com.banan.anime;
 
 import java.util.ArrayList;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
@@ -60,15 +62,68 @@ public class AnimeActivity extends BaseActivity implements ActionBar.OnNavigatio
 			startActivity(new Intent(this, TvdbPreferenceActivity.class));
 			break;
 		case R.id.menu_seenall:
-			
-			ArrayList<String> param = new ArrayList<String>();
-			param.add(anime_id);
-			param.add("true");
-			Intent i = new Intent(this, RestService.class);
-			i.putExtra(RestService.ACTION, RestService.PUT);
-			i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_ANIME);
-			i.putExtra(RestService.PARAMS, param);
-			startService(i);
+			DialogInterface.OnClickListener dialogClickListener = new DialogInterface.OnClickListener() {
+				/**
+				 * This is the dialoginterface for the "Mark all episodes as watched button"
+				 */
+				@Override
+			    public void onClick(DialogInterface dialog, int which) {
+			        switch (which){
+			        case DialogInterface.BUTTON_POSITIVE:
+			            //Yes button clicked
+			        	String anime_id = getIntent().getStringExtra("anime_id");
+			        	ArrayList<String> param = new ArrayList<String>();
+						param.add(anime_id);
+						param.add("true");
+						Intent i = new Intent(getApplicationContext(), RestService.class);
+						i.putExtra(RestService.ACTION, RestService.PUT);
+						i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_ANIME);
+						i.putExtra(RestService.PARAMS, param);
+						startService(i);
+			            break;
+
+			        case DialogInterface.BUTTON_NEGATIVE:
+			            //No button clicked
+			        	dialog.dismiss();
+			            break;
+			        }
+			    }
+			};
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+			builder.setMessage("This will mark the entire anime as watched. Are you sure?").setPositiveButton("Yes", dialogClickListener)
+		    		.setNegativeButton("No", dialogClickListener).show();
+			break;
+		case R.id.menu_unseeall:
+			DialogInterface.OnClickListener dialogClickListener2 = new DialogInterface.OnClickListener() {
+				/**
+				 * This is the dialoginterface for the "Mark all episodes as watched button"
+				 */
+				@Override
+			    public void onClick(DialogInterface dialog, int which) {
+			        switch (which){
+			        case DialogInterface.BUTTON_POSITIVE:
+			            //Yes button clicked
+			        	String anime_id = getIntent().getStringExtra("anime_id");
+			        	ArrayList<String> param = new ArrayList<String>();
+						param.add(anime_id);
+						param.add("false");
+						Intent i = new Intent(getApplicationContext(), RestService.class);
+						i.putExtra(RestService.ACTION, RestService.PUT);
+						i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_ANIME);
+						i.putExtra(RestService.PARAMS, param);
+						startService(i);
+			            break;
+
+			        case DialogInterface.BUTTON_NEGATIVE:
+			            //No button clicked
+			        	dialog.dismiss();
+			            break;
+			        }
+			    }
+			};
+			AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
+			builder2.setMessage("This will mark the entire anime as unwatched and thus remove it from your library. Are you sure?").setPositiveButton("Yes", dialogClickListener2)
+		    		.setNegativeButton("No", dialogClickListener2).show();
 			break;
 		case R.id.menu_update:
 			

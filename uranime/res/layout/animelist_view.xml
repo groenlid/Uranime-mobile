@@ -6,7 +6,7 @@
     android:scaleType="matrix" >
     <ListView
         android:id="@+id/animelist"
-       	android:layout_height="fill_parent" 
+       	android:layout_height="fill_parent"
        	android:divider="#FF000000"
        	android:dividerHeight="1dip"
        	android:layout_width="fill_parent"

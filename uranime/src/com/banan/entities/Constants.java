@@ -3,11 +3,18 @@ package com.banan.entities;
 import com.banan.trakt.RestClient;
 import com.google.gson.Gson;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -65,6 +72,8 @@ public class Constants {
 	public static final String EPISODE_IMAGE_PATH = SERVER 
 			+ "attachments/episodes/"; // + animeid / episodeid.extension
 	
+	public static final int CALENDAR_WEEKS = 20;
+	
 	// USEFULL FUNCTIONS
 
 	public static String getUsername(Context c) {
@@ -107,6 +116,63 @@ public class Constants {
 		Editor e = sp.edit();
 		e.putLong("update"+type, millis);
 		e.commit();
+	}
+	
+	public static long getLastAdClick(Context c){
+		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+
+		return sp.getLong("adclick", 0);
+	}
+	
+	public static void setLastAdClick(Context c, long millis){
+		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
+		Editor e = sp.edit();
+		e.putLong("adclick", millis);
+		e.commit();
+	}
+	
+	/**
+	 * Convert from unix time to string with the format yyyy-mm-dd.
+	 * If @now is null, current unix time is used.
+	 * @param now
+	 * @return
+	 */
+	public static String timeToString(Long now){
+		
+		java.util.Calendar nowCalendar = java.util.Calendar.getInstance(); 
+		if(now != null)
+			nowCalendar.setTimeInMillis(now);
+		
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		return sdf.format(nowCalendar.getTime());
+		
+		
+		/*return "" + nowCalendar.get(Calendar.YEAR) 
+				+ "-" + java.util.Formatter.format(nowCalendar.get(Calendar.MONTH))
+				+ "-" + nowCalendar.get(Calendar.DATE);*/
+	}
+	
+	/**
+	 * Convert the string with the format yyyy-mm-dd to long unix time.
+	 * @param time
+	 * @return
+	 */
+	public static long stringToTime(String time){
+		if(time == null)
+			return 0l;
+		
+		
+		String format = "yyyy-MM-dd";
+		
+		SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.US);
+		try {
+			Date dateTime = sdf.parse(time);
+			
+			return dateTime.getTime();
+		} catch (ParseException e) {
+			Log.e("StringToTime", "Could not parse string " + time);
+			return 0l;
+		}
 	}
 
 	public static String getUserID(Context c) {

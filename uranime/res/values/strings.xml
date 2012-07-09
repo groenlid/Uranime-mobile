@@ -31,4 +31,14 @@
         <item>Library</item>
         <item>Watchlist</item>
     </string-array>
+    <string name="mark_all_as_unseen">Mark all episodes as unseen</string>
+    <string-array name="weekdays">
+        <item>Sunday</item>
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+    </string-array>
 </resources>

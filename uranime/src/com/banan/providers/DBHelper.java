@@ -13,7 +13,7 @@ import android.util.Log;
 public class DBHelper extends SQLiteOpenHelper {
 	private static final String TAG = DBHelper.class.getSimpleName();
 	public static final String DB_NAME = "anime.db";
-	public static final int DB_VERS = 2;
+	public static final int DB_VERS = 3;
 	public static final boolean Debug = true;
 	
 	public Context context;
@@ -131,27 +131,7 @@ public class DBHelper extends SQLiteOpenHelper {
             
             if(oldVersion == 1)
             {	
-            	
-            	//Check if the tables are missing.
-        		this.onCreate(db);
-        		
-        		// Put in a list the existing columns
-        		List<String> columns = DBHelper.GetColumns(db, EPISODE_TABLE);
-        		//Backup table
-        		db.execSQL("ALTER table " + EPISODE_TABLE + " RENAME TO temp_" + EPISODE_TABLE + ";");
-        		
-        		// Create the table with the new schema
-        		this.onCreate(db);
-        		//get the intersection with the new columns, this time columns taken from the upgraded table 
-        		columns.retainAll(DBHelper.GetColumns(db, EPISODE_TABLE));
-        		
-        		// Restore data
-        		String cols = DBHelper.join(columns, ","); 
-        		db.execSQL(String.format( "INSERT INTO %s (%s) SELECT %s from temp_%s",EPISODE_TABLE, cols, cols, EPISODE_TABLE));
-        		
-        		//remove backup table 
-        		db.execSQL("DROP table 'temp_" + EPISODE_TABLE);
-        		
+            	alterTable(db, EPISODE_TABLE); // Adding the episode image and special field
             }
             
             //db.execSQL(DATABASE_UPGRADE);
@@ -170,6 +150,31 @@ public class DBHelper extends SQLiteOpenHelper {
 		}
 		
 
+	}
+	
+	private boolean alterTable(SQLiteDatabase db, String table)
+	{
+		//Check if the tables are missing.
+		this.onCreate(db);
+		
+		// Put in a list the existing columns
+		List<String> columns = DBHelper.GetColumns(db, table);
+		//Backup table
+		db.execSQL("ALTER table " + table + " RENAME TO temp_" + table + ";");
+		
+		// Create the table with the new schema
+		this.onCreate(db);
+		//get the intersection with the new columns, this time columns taken from the upgraded table 
+		columns.retainAll(DBHelper.GetColumns(db, table));
+		
+		// Restore data
+		String cols = DBHelper.join(columns, ","); 
+		db.execSQL(String.format( "INSERT INTO %s (%s) SELECT %s from temp_%s",table, cols, cols, table));
+		
+		//remove backup table 
+		db.execSQL("DROP table temp_" + table);
+		
+		return true;
 	}
 	
 	public static List<String> GetColumns(SQLiteDatabase db, String tableName) {

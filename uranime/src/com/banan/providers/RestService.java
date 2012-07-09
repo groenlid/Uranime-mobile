@@ -125,7 +125,7 @@ public class RestService extends Service
 					RestService.CHANGE_ANIME_WATCHLIST(getApplicationContext(), Integer.parseInt(listparam.get(0)), listparam.get(1), null);
 					break;
 				case RestService.OBJECT_TYPE_ANIME:
-					RestService.MARK_ANIME_AS_WATCHED(getApplicationContext(), Integer.parseInt(listparam.get(0)), listparam.get(1), null);
+					RestService.MARK_ANIME_AS_WATCHED(getApplicationContext(), Integer.parseInt(listparam.get(0)), Boolean.parseBoolean(listparam.get(1)), null);
 				}
 				break;
 			case RestService.DELETE:
@@ -439,7 +439,15 @@ public class RestService extends Service
 		RestService.FETCH_USER_SEEN_EPISODES(c,animeID,rest);
 	}
 	
-	public static boolean MARK_ANIME_AS_WATCHED(Context c, int anime_id, String markAsWatched, RestClient rest){
+	/**
+	 * 
+	 * @param c
+	 * @param anime_id
+	 * @param watched: if the anime should be marked as watched or unseen. true = watched.
+	 * @param rest
+	 * @return
+	 */
+	public static boolean MARK_ANIME_AS_WATCHED(Context c, int anime_id, boolean watched, RestClient rest){
 		if(rest == null)
 			rest = RestClient.getInstance(c);
 		
@@ -447,7 +455,12 @@ public class RestService extends Service
 		
 		Cursor anime = c.getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+anime_id, null, null);
 		ContentValues result = new ContentValues();
-		result.put(DBHelper.EPISODE_SEEN_COL, "true");
+		
+		if(watched)
+			result.put(DBHelper.EPISODE_SEEN_COL, Constants.timeToString(null));
+		else
+			result.putNull(DBHelper.EPISODE_SEEN_COL);
+		
 		c.getContentResolver().update(EpisodeProvider.CONTENT_URI, result, DBHelper.EPISODE_ANIME_ID_COL +"="+anime_id, null);
 		c.getContentResolver().notifyChange(EpisodeProvider.CONTENT_URI, null);
 		

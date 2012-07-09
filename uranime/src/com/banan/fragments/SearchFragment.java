@@ -281,7 +281,9 @@ public class SearchFragment extends SherlockFragment{
 
 		@Override
 		public void bindView(View view, Context context, Cursor c) {
-	 
+			if(c.isClosed() || c == null)
+				return;
+			
 			TextView tv = (TextView) view.findViewById(R.id.anime_title);
 			TextView animeDesc = (TextView)view.findViewById(R.id.episode_next);
 			ImageView image = (ImageView)view.findViewById(R.id.anime_image);
