@@ -14,7 +14,7 @@ public class DBHelper extends SQLiteOpenHelper {
 	private static final String TAG = DBHelper.class.getSimpleName();
 	public static final String DB_NAME = "anime.db";
 	public static final int DB_VERS = 3;
-	public static final boolean Debug = true;
+	public static final boolean Debug = false;
 	
 	public Context context;
 	

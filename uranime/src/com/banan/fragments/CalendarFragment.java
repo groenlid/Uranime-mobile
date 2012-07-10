@@ -70,56 +70,29 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 			// DATE() (== SQL NOW())	
 			
 			// DATE(DATE(), '1 day') for use in between
+			
+			String calendarDATESQL = "(";
+			
 			for(int i = 0; i < 7; i++)
 			 {
 				Calendar calendar = Calendar.getInstance();
 				calendar.add(Calendar.DAY_OF_YEAR, -calendar.get(Calendar.DAY_OF_WEEK) + (diffWeek * 7) + i);
+				calendarDATESQL += DBHelper.EPISODE_AIRED_COL + "='" + Constants.timeToString(calendar.getTimeInMillis()) + "' OR ";
 				
-				//calendar.add(Calendar.DAY_OF_YEAR, diffWeek * 7);
-				//calendar.add(Calendar.DAY_OF_YEAR, i);
-				//int fromDay = -weekday + i-1 + (diffWeek * 7);
-				//int toDay = -weekday + i + (diffWeek * 7);
-				
-				//Log.e("Calendar",Constants.timeToString(calendar.getTimeInMillis()));
-				final Cursor episodes = getActivity().managedQuery(
-						 EpisodeProvider.CONTENT_URI, Episode.projection,
-						 DBHelper.EPISODE_AIRED_COL + " == '" + Constants.timeToString(calendar.getTimeInMillis()) + "' AND ("+DBHelper.EPISODE_ANIME_ID_COL + " IN(" +
-						 		"SELECT DISTINCT " + DBHelper.EPISODE_ANIME_ID_COL + " FROM " + DBHelper.EPISODE_TABLE + " WHERE " + DBHelper.EPISODE_SEEN_COL + " IS NOT NULL"+
-						 		") OR "+DBHelper.EPISODE_ANIME_ID_COL+" IN(SELECT "+DBHelper.ANIME_ID+" FROM "+DBHelper.ANIME_TABLE+" WHERE "+DBHelper.ANIME_WATCHLIST+" IS NOT NULL))",
-						 null,null);
-				 /*final Cursor episodes = getActivity().managedQuery(
-						 EpisodeProvider.CONTENT_URI, Episode.projection,
-						 DBHelper.EPISODE_AIRED_COL + " == DATE(strftime('%Y-%m-%d','" + Constants.timeToString(calendar.getTimeInMillis()) + "'), '" + i + " day') AND ("+DBHelper.EPISODE_ANIME_ID_COL + " IN(" +
-						 		"SELECT DISTINCT " + DBHelper.EPISODE_ANIME_ID_COL + " FROM " + DBHelper.EPISODE_TABLE + " WHERE " + DBHelper.EPISODE_SEEN_COL + " IS NOT NULL"+
-						 		") OR "+DBHelper.EPISODE_ANIME_ID_COL+" IN(SELECT "+DBHelper.ANIME_ID+" FROM "+DBHelper.ANIME_TABLE+" WHERE "+DBHelper.ANIME_WATCHLIST+" IS NOT NULL))",
-						 null,null);
-				 */
-				 if(episodes.getCount() == 0)
-					 continue;
-				 
-				 
-				 TextView date = new TextView(getActivity().getApplicationContext());
-				 
-				 date.setTextAppearance(getActivity(),android.R.style.TextAppearance_Holo_Large);
-				 //date.setBackgroundColor(getResources().getColor(R.color.abs__background_holo_dark));
-				 content.addView(date);
+			 }
+			calendarDATESQL = Constants.truncate(calendarDATESQL, calendarDATESQL.length()-3, false) + ")";
+			
+			final Cursor episodes = getActivity().managedQuery(
+					 EpisodeProvider.CONTENT_URI, Episode.projection,
+					 calendarDATESQL + " AND ("+DBHelper.EPISODE_ANIME_ID_COL + " IN(" +
+					 		"SELECT DISTINCT " + DBHelper.EPISODE_ANIME_ID_COL + " FROM " + DBHelper.EPISODE_TABLE + " WHERE " + DBHelper.EPISODE_SEEN_COL + " IS NOT NULL"+
+					 		") OR "+DBHelper.EPISODE_ANIME_ID_COL+" IN(SELECT "+DBHelper.ANIME_ID+" FROM "+DBHelper.ANIME_TABLE+" WHERE "+DBHelper.ANIME_WATCHLIST+" IS NOT NULL))",
+					 null,DBHelper.EPISODE_AIRED_COL + " ASC");
 				 
 				 episodes.moveToFirst();
 				 
-				 String dateString = episodes.getString(
-						 episodes.getColumnIndexOrThrow(DBHelper.EPISODE_AIRED_COL));
+				 String lastDate = "";
 				 
-				 // TODO: Check if the date is today.
-				 if(Constants.timeToString(null).equals(dateString))
-					 date.setText("Today");
-				 else{
-				 	
-				 SimpleDateFormat sdf = new SimpleDateFormat("c, dd.MM.yyyy");
-				 date.setText(sdf.format(calendar.getTime()));
-					 
-					 
-				 }
-				// ArrayList<Integer> existsAnime = new ArrayList<Integer>();
 				 do
 				 {
 					 
@@ -140,37 +113,24 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 									 )
 							 );
 					 
-					 list.setAdapter(new AnimeAdapter(getActivity(), anime, episodes, episodes.getPosition()));
+					 // Check if the header with date needs to be displayed.
+					 boolean showHeader = false;
+					 String episodeDate = episodes.getString(episodes.getColumnIndexOrThrow(DBHelper.EPISODE_AIRED_COL));
+
+					 if(!lastDate.equals(episodeDate))
+					 {
+						 showHeader = true;
+						 lastDate = episodeDate;
+					 }
+					 
+					 
+					 list.setAdapter(new AnimeAdapter(getActivity(), anime, episodes, episodes.getPosition(), showHeader));
 
 					 content.addView(list);
-					 /*
-					 list.setOnItemClickListener(new OnItemClickListener() {
-		
-							public void onItemClick(AdapterView<?> parent, View view, int pos,
-									long id) {
-								episodes.moveToPosition(pos);
-											
-								String anime_id = "" + anime.getInt(anime.getColumnIndexOrThrow(DBHelper.ANIME_ID));
-								String episode_number = "" + episodes.getInt(episodes.getColumnIndexOrThrow(DBHelper.EPISODE_NUMBER_COL));
-								boolean special_episode = episodes.getInt(episodes.getColumnIndexOrThrow(DBHelper.EPISODE_SPECIAL_COL))>0;
-								Log.e("pos",""+pos);
-								Log.e("Anime_id",anime_id);
-								Log.e("episode_number", episode_number);
-								Log.e("special",special_episode+"");
-								
-								Intent i = new Intent(getActivity().getApplicationContext(),EpisodeActivity.class);
-								i.putExtra("anime_id", anime_id);
-								i.putExtra("episode_number", episode_number);
-								i.putExtra("special_episode", special_episode);
-								startActivity(i);
-							}
-						
-						});*/
-					 //anime.close();
+
 				 }while(episodes.moveToNext());
 				 
 				 // Fetch anime from watchlist
-			 }
 			
 			return v;
 		}
@@ -196,13 +156,15 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 			private Cursor show;
 			private Cursor episode;
 			private int epPos;
+			private boolean header;
 			
-			public AnimeAdapter(Context context, Cursor show, Cursor episode, int epPos)
+			public AnimeAdapter(Context context, Cursor show, Cursor episode, int epPos, boolean header)
 			{
 				super(context,show);
 				this.show = show;
 				this.episode = episode;
 				this.epPos = epPos;
+				this.header = header;
 				
 				imageLoader = ImageLoader.getInstance();
 				
@@ -215,11 +177,6 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 
 			@Override
 			public void bindView(View view, Context context, Cursor show) {
-				//Log.e("cursor",""+show.getCount());
-				/*final Cursor show = managedQuery(
-						AnimeProvider.CONTENT_URI, Anime.projection, 
-						DBHelper.ANIME_ID + "=" + c.getInt(c.getColumnIndexOrThrow(DBHelper.EPISODE_ANIME_ID_COL)), 
-						null, null);*/
 				
 				if(!show.moveToFirst())
 					return;
@@ -238,12 +195,27 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 				
 				TextView episodeNext = (TextView)view.findViewById(R.id.episode_next);
 				
+				TextView date = (TextView)view.findViewById(R.id.separator);
+				
+				if(!header)
+					date.setVisibility(View.GONE);
 				//episode_next_field
 				//episode_next
 				//episode_next_date
 				
+				 String dateString = episode.getString(
+						 episode.getColumnIndexOrThrow(DBHelper.EPISODE_AIRED_COL));
+				 
+				 // TODO: Check if the date is today.
+				 if(Constants.timeToString(null).equals(dateString))
+					 date.setText("Today");
+				 else{
+					 SimpleDateFormat sdf = new SimpleDateFormat("E, dd.MM.yyyy");
+					 date.setText(sdf.format(Constants.stringToTime(dateString))); 
+				 }
 				
-				image.setScaleType(ScaleType.CENTER_CROP);
+				
+				image.setScaleType(ScaleType.MATRIX);
 				
 				String episode_image = show.getString(show.getColumnIndexOrThrow(DBHelper.ANIME_FANART_COL));
 				if(episode_image == null)
@@ -275,11 +247,6 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 					@Override
 					public void onClick(View v) {
 						
-						/*
-						String anime_id = "" + episode.getInt(episode.getColumnIndexOrThrow(DBHelper.EPISODE_ANIME_ID_COL));
-						String episode_number = "" + episode.getInt(episode.getColumnIndexOrThrow(DBHelper.EPISODE_NUMBER_COL));
-						boolean special_episode = episode.getInt(episode.getColumnIndexOrThrow(DBHelper.EPISODE_SPECIAL_COL))>0;
-						*/
 						Log.e("Anime_id",anime_id);
 						Log.e("episode_number", episode_number);
 						Log.e("special",special_episode+"");

@@ -174,7 +174,10 @@ public class Constants {
 			return 0l;
 		}
 	}
-
+	
+	// Check if user is logged in. If he is, then return userid.. if not return
+	// no id.
+	// Meanwhile try to login if checkbox is set.
 	public static String getUserID(Context c) {
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
 
@@ -198,6 +201,7 @@ public class Constants {
 		return userid;
 	}
 
+
 	public static void setUserID(Context c, String id) {
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
 		Editor e = sp.edit();
@@ -205,14 +209,19 @@ public class Constants {
 		e.commit();
 	}
 
-	// Check if user is logged in. If he is, then return userid.. if not return
-	// no id.
-	// Meanwhile try to login if checkbox is set.
+
 
 	public static String truncate(String input, int length) {
+		return Constants.truncate(input, length, true);
+	}
+	
+	public static String truncate(String input, int length, boolean appendDots) {
 		if (input.length() <= length - 1)
 			return input;
-		return input.substring(0, length) + "..";
+		String returnus = input.substring(0, length);
+		if(appendDots)
+			returnus += returnus + "..";
+		return returnus;
 	}
 
 	/**
