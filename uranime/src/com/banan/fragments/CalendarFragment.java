@@ -89,6 +89,9 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 					 		") OR "+DBHelper.EPISODE_ANIME_ID_COL+" IN(SELECT "+DBHelper.ANIME_ID+" FROM "+DBHelper.ANIME_TABLE+" WHERE "+DBHelper.ANIME_WATCHLIST+" IS NOT NULL))",
 					 null,DBHelper.EPISODE_AIRED_COL + " ASC");
 				 
+				if(episodes.getCount() == 0)
+					return v;
+			
 				 episodes.moveToFirst();
 				 
 				 String lastDate = "";
