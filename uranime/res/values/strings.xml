@@ -41,4 +41,5 @@
         <item>Friday</item>
         <item>Saturday</item>
     </string-array>
+    <string name="type">NOT IN USE... JUST FOR setTag variables</string>
 </resources>

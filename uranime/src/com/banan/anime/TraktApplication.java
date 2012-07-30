@@ -15,6 +15,7 @@ import android.os.Environment;
 
 public class TraktApplication extends Application
 {
+		@SuppressLint("NewApi")
 		public void onCreate()
 		{
 			super.onCreate();
@@ -48,5 +49,6 @@ public class TraktApplication extends Application
 			DBHelper helper = new DBHelper(this);
 			helper.getWritableDatabase();
 			helper.close();
+			
 		}
 }

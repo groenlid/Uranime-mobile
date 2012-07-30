@@ -494,7 +494,9 @@ public class RestService extends Service
 		else
 			userid = Constants.getUserID(c);
 		
-		String anString = rest.ReadMethod(Constants.REST_WATCH_ANIME + userid + "/" + anime_id + ".json");
+		String watchedBooleanString = (watched) ? "true" : "false";
+		
+		String anString = rest.ReadMethod(Constants.REST_WATCH_ANIME + userid + "/" + anime_id + "/" + watchedBooleanString + ".json");
 		
 		/*** TODO: Need to check results from this method **/
 		

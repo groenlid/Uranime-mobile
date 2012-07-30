@@ -6,8 +6,10 @@ import java.util.Collection;
 import java.util.List;
 
 import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
+import com.actionbarsherlock.view.Window;
 import com.banan.entities.Anime;
 import com.banan.entities.AnimeRequest;
 import com.banan.entities.Constants;
@@ -28,6 +30,7 @@ import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.viewpagerindicator.TabPageIndicator;
 import com.viewpagerindicator.TitlePageIndicator;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -62,18 +65,19 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		
+		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		setContentView(R.layout.search_tabs);
 		
 		SearchPageAdapter adapter = new SearchPageAdapter(getSupportFragmentManager());
+		
+		
 		
 		ViewPager pager = (ViewPager)findViewById(R.id.pager);
 		pager.setAdapter(adapter);
 		
 		TitlePageIndicator indicator = (TitlePageIndicator)findViewById(R.id.indicator);
 		indicator.setViewPager(pager);
-		final Context c = this.getApplicationContext();
-		
+		final SherlockFragmentActivity a = this;
 		
 		// So the user can get logged in without doing an action.
 		Constants.getUserID(this);
@@ -84,16 +88,18 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 		
 			public void onPageSelected(int pos) {
 				// TODO Auto-generated method stub
-				if (pos == 1 && Constants.getLastUpdate(c, SearchFragment.TYPE_LATEST) < minTimeSinceUpdate)
+				// Position 1 is the Latest page.
+				if (pos == 1 && Constants.getLastUpdate(a.getApplicationContext(), SearchFragment.TYPE_LATEST) < minTimeSinceUpdate)
 				{
 					SearchFragment s = new SearchFragment();
-					s.new SearchService(c).execute(Constants.REST_LATEST_ANIME, 
+					s.new SearchService(a).execute(Constants.getLatestAnimeURL(10, 0), 
 							 SearchFragment.TYPE_LATEST);
 				}
-				else if(pos == 2 && Constants.getLastUpdate(c, SearchFragment.TYPE_TRENDING) < minTimeSinceUpdate)
+				// Position 2 is the Trending page.
+				else if(pos == 2 && Constants.getLastUpdate(a.getApplicationContext(), SearchFragment.TYPE_TRENDING) < minTimeSinceUpdate)
 				{
 					SearchFragment s = new SearchFragment();
-					s.new SearchService(c).execute(Constants.REST_TRENDING_ANIME, 
+					s.new SearchService(a).execute(Constants.getTopAnimeURL(10,0), 
 							 SearchFragment.TYPE_TRENDING);
 				}
 					
@@ -110,6 +116,7 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 				
 			}
 		});
+		setSupportProgressBarIndeterminateVisibility(false);
 		
 	}
 	public boolean onNavigationItemSelected(int itemPosition, long itemId) {
@@ -123,11 +130,10 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 		switch (item.getItemId()) {
 		case R.id.menu_update:
 				SearchFragment s = new SearchFragment();
-				s.new SearchService(getApplicationContext()).execute(Constants.REST_LATEST_ANIME, 
+				s.new SearchService(this).execute(Constants.getLatestAnimeURL(10, 0), 
 						 SearchFragment.TYPE_LATEST);;
-				s.new SearchService(getApplicationContext()).execute(Constants.REST_TRENDING_ANIME, 
+				s.new SearchService(this).execute(Constants.getTopAnimeURL(10,0), 
 						 SearchFragment.TYPE_TRENDING);
-
 			Toast.makeText(this, R.string.animelist_refresh, Toast.LENGTH_SHORT)
 					.show();
 

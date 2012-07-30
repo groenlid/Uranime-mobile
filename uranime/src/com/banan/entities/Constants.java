@@ -46,10 +46,10 @@ public class Constants {
 			+ "api/animeepisodes/";
 
 	public static final String REST_LATEST_ANIME = SERVER
-			+ "api/latestAnime/10/0.json";
+			+ "api/latestAnime/";//"api/latestAnime/10/0.json";
 	
 	public static final String REST_TRENDING_ANIME = SERVER
-			+ "api/trendingAnime/10.json";
+			+ "api/trendingAnime/";//"api/trendingAnime/10.json";
 	
 	public static final String REST_USER_EPISODES = SERVER
 			+ "api/userepisodes/";
@@ -75,7 +75,17 @@ public class Constants {
 	public static final int CALENDAR_WEEKS = 20;
 	
 	// USEFULL FUNCTIONS
-
+	
+	public static String getLatestAnimeURL(int limit, int offset) {
+		//Log.e("getLatest", "limit: " + limit + "; startingWith: " + offset);
+		return Constants.REST_LATEST_ANIME + limit + "/" + offset + ".json";
+	}
+	
+	public static String getTopAnimeURL(int limit, int offset) {
+		//Log.e("getTop", "limit: " + limit + "; startingWith: " + offset);
+		return Constants.REST_TRENDING_ANIME + limit + "/" + offset + ".json";
+	}
+	
 	public static String getUsername(Context c) {
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(c);
 		// SharedPreferences sp = c.getSharedPreferences(PREFERENCE_NAME,

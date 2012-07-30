@@ -12,8 +12,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.database.Cursor;
+import android.database.DataSetObserver;
 import android.database.DatabaseUtils;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.CursorAdapter;
@@ -24,6 +26,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
+import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -36,7 +41,9 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.Toast;
 
 import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.SherlockActivity;
 import com.actionbarsherlock.app.SherlockFragment;
+import com.actionbarsherlock.app.SherlockFragmentActivity;
 import com.banan.anime.AnimeActivity;
 import com.banan.anime.AnimeListActivity;
 import com.banan.anime.R;
@@ -54,7 +61,7 @@ import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 
-public class SearchFragment extends SherlockFragment{
+public class SearchFragment extends SherlockFragment implements OnScrollListener{
 
 	public static final int TYPE_SEARCH = 0;
 	public static final int TYPE_LATEST = 1;
@@ -79,7 +86,6 @@ public class SearchFragment extends SherlockFragment{
 	
 	public String content = null;
 	
-	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		setRetainInstance(true);
@@ -97,6 +103,16 @@ public class SearchFragment extends SherlockFragment{
 		else
 			return null;
 		
+	}
+	
+	public void onResume(){
+		super.onResume();
+		if(latestResults == null || latestResults.isClosed())
+			latestResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_ID + " DESC LIMIT 0,10");
+		if(topResults == null || topResults.isClosed())
+			topResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_BAYES_RATING + " DESC LIMIT 0,10");
+		if(adapter != null)
+			adapter.notifyDataSetChanged();
 	}
 	
 	public View createSearchPage(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -138,9 +154,10 @@ public class SearchFragment extends SherlockFragment{
 			  searchResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_TITLE_COL + " LIKE '%" + e.getText().toString() + "%'", null, DBHelper.ANIME_ID + " DESC");
 		  }*/
 		  if(searchResults == null || searchResults.isClosed())
-			  adapter = new SearchLatestAdapter(getActivity(),null);
+			  adapter = new SearchLatestAdapter(getSherlockActivity(),null);
 		  else
-			  adapter = new SearchLatestAdapter(getActivity(),searchResults);
+			  adapter = new SearchLatestAdapter(getSherlockActivity(),searchResults);
+		  
 		  lv.setOnItemClickListener(new OnItemClickListener() {
 
 				public void onItemClick(AdapterView<?> parent, View view, int pos,
@@ -158,6 +175,9 @@ public class SearchFragment extends SherlockFragment{
 			
 			});
 		  
+		  adapter.registerDataSetObserver(new DataSetObserver() {
+		});
+		
 		  lv.setAdapter(adapter);
 		return v;
 	}
@@ -166,13 +186,13 @@ public class SearchFragment extends SherlockFragment{
 		//searchText = DatabaseUtils.sqlEscapeString(searchText);
 		searchBtn.requestFocus();
 		//searchText = searchText.replace("'","\'");
-		new SearchService(getActivity().getApplicationContext()).execute(Constants.REST_SEARCH + searchText.replace(" ", "%20") + ".json",
+		new SearchService(getSherlockActivity()).execute(Constants.REST_SEARCH + searchText.replace(" ", "%20") + ".json",
 	    		TYPE_SEARCH);
 	    //searchResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_TITLE_COL + " LIKE '%" + searchText + "%'", null, DBHelper.ANIME_ID + " DESC");
-		searchResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_TITLE_COL + " LIKE ?", new String[]{"%" + searchText + "%"}, DBHelper.ANIME_ID + " DESC");
+		searchResults = getSherlockActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_TITLE_COL + " LIKE ?", new String[]{"%" + searchText + "%"}, DBHelper.ANIME_ID + " DESC");
 		adapter.changeCursor(searchResults);
 		
-		Toast.makeText(this.getActivity(), R.string.searching, Toast.LENGTH_LONG).show();
+		Toast.makeText(this.getSherlockActivity(), R.string.searching, Toast.LENGTH_LONG).show();
 		
 		//Log.e("search",searchResults.);
 	    return true;
@@ -184,20 +204,27 @@ public class SearchFragment extends SherlockFragment{
 
 		ListView lv = (ListView) v.findViewById(R.id.animelist);
 		latestResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_ID + " DESC LIMIT 0,10");
+		
+		getActivity().stopManagingCursor(latestResults);
+		
 		adapter = new SearchLatestAdapter(getActivity(),
 				latestResults);
 		/*if (latestResults.size() == 0)
 			new SearchService().execute(Constants.REST_LATEST_ANIME, ""
 					+ TYPE_LATEST, this.getActivity());*/
-
+		
+		lv.setTag(R.string.type, "" + TYPE_LATEST);
+		
+		lv.setOnScrollListener(this);
+		
 		lv.setOnItemClickListener(new OnItemClickListener() {
 
 			public void onItemClick(AdapterView<?> parent, View view, int pos,
 					long id) {			
-				if(!latestResults.moveToPosition(pos))	
+				if(!adapter.getCursor().moveToPosition(pos))	
 					return;
 				
-				int anime_id = latestResults.getInt(latestResults.getColumnIndexOrThrow(DBHelper.ANIME_ID));
+				int anime_id = adapter.getCursor().getInt(adapter.getCursor().getColumnIndexOrThrow(DBHelper.ANIME_ID));
 
 				Intent i = new Intent(getActivity().getApplicationContext(),
 						AnimeActivity.class);
@@ -217,21 +244,27 @@ public class SearchFragment extends SherlockFragment{
 		View v = inflater.inflate(R.layout.animelist_view, container, false);
 
 		ListView lv = (ListView) v.findViewById(R.id.animelist);
-		topResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_BAYES_RATING + " DESC LIMIT 0,10");;
-		adapter = new SearchLatestAdapter(getActivity(),
+		topResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_BAYES_RATING + " DESC LIMIT 0,10");
+		
+		getActivity().stopManagingCursor(topResults);
+		
+		adapter = new SearchLatestAdapter(getSherlockActivity(),
 				topResults);
 		/*if (latestResults.size() == 0)
 			new SearchService().execute(Constants.REST_LATEST_ANIME, ""
 					+ TYPE_LATEST, this.getActivity());*/
-
+		lv.setTag(R.string.type, "" + TYPE_TRENDING);
+		
+		lv.setOnScrollListener(this);
+		
 		lv.setOnItemClickListener(new OnItemClickListener() {
 
 			public void onItemClick(AdapterView<?> parent, View view, int pos,
 					long id) {			
-				if(!topResults.moveToPosition(pos))	
+				if(!adapter.getCursor().moveToPosition(pos))	
 					return;
 				
-				int anime_id = topResults.getInt(topResults.getColumnIndexOrThrow(DBHelper.ANIME_ID));
+				int anime_id = adapter.getCursor().getInt(adapter.getCursor().getColumnIndexOrThrow(DBHelper.ANIME_ID));
 
 				Intent i = new Intent(getActivity().getApplicationContext(),
 						AnimeActivity.class);
@@ -328,11 +361,6 @@ public class SearchFragment extends SherlockFragment{
 		
 		AnimeRequest requests = gson.fromJson(response,AnimeRequest.class);
 		
-		if(type== TYPE_TRENDING)
-			Constants.setLastUpdate(c, TYPE_TRENDING, Calendar.getInstance().getTimeInMillis());
-		else if(type == TYPE_LATEST)
-			Constants.setLastUpdate(c, TYPE_LATEST, Calendar.getInstance().getTimeInMillis());
-		
 		/*
 		 * 
 		 * */
@@ -368,6 +396,16 @@ public class SearchFragment extends SherlockFragment{
 			result.put(DBHelper.ANIME_BAYES_RATING, r.bayes);
 			
 			c.getContentResolver().insert(AnimeProvider.CONTENT_URI, result); // We add the anime to the database..
+			
+			if(type== TYPE_TRENDING){
+				Constants.setLastUpdate(c, TYPE_TRENDING, Calendar.getInstance().getTimeInMillis());
+				
+			}
+			else if(type == TYPE_LATEST)
+			{
+				Constants.setLastUpdate(c, TYPE_LATEST, Calendar.getInstance().getTimeInMillis());
+			}
+			
 		}
 		return requests.getAnimelist().size();
 		//Log.e("tag",query);
@@ -381,16 +419,28 @@ public class SearchFragment extends SherlockFragment{
         private String Content;
         private String Error = null;
         private ProgressDialog Dialog;
+        private SherlockActivity a;
+        private SherlockFragmentActivity b;
         private Context c;
         
-        public SearchService(Context c)
+        int type = 0;
+        public SearchService(SherlockActivity a)
         {
-        	this.c = c;
+        	this.a = a;
+        	c = a.getApplicationContext();
+        }
+        
+        public SearchService(SherlockFragmentActivity b)
+        {
+        	this.b = b;
+        	c = b.getApplicationContext();
         }
         
         protected void onPreExecute() {
-        	if(c == null)
-        		Log.e("SearchService","Context is null");
+        	if(a != null)
+        		a.setSupportProgressBarIndeterminateVisibility(true);
+        	if(b != null)
+        		b.setSupportProgressBarIndeterminateVisibility(true);
         	/*Dialog = new ProgressDialog(c);
             Resources res = c.getResources();
             Dialog.setMessage(res.getString(R.string.searching));
@@ -398,6 +448,7 @@ public class SearchFragment extends SherlockFragment{
         }
 
         protected Integer doInBackground(Object... params) {
+        	type = (Integer)(params[1]);
             return sendQuery((String)params[0], (Integer)(params[1]),c);
         }
         
@@ -407,9 +458,77 @@ public class SearchFragment extends SherlockFragment{
         		adapter.notifyDataSetChanged();
         	if(lv != null)
         		lv.invalidate();
+        	if(a != null)
+        		a.setSupportProgressBarIndeterminateVisibility(false);
+        	if(b != null)
+        		b.setSupportProgressBarIndeterminateVisibility(false);
+        	loading = false;
+        	if(type == TYPE_LATEST)
+        		TotalLatest += resultAmount;
+        	else if(type == TYPE_TRENDING)
+        		TotalTrending += resultAmount;
+        	
         	Toast.makeText(c, "Found " + resultAmount + " anime(s) online.", Toast.LENGTH_SHORT).show();
         }
         
     }
+	
+	// Endless scrolling variables
+	private int visibleThreshold = 1;
+	private static int TotalLatest = 0;
+	private static int TotalTrending = 0;
+	private static boolean loading = false;
+
+	public void onScroll(AbsListView view, int firstVisibleItem,
+			int visibleItemCount, int totalItemCount) {
+		
+		SearchLatestAdapter localAdapter = (SearchLatestAdapter) view.getAdapter();
+		if(localAdapter == null || localAdapter.getCursor() == null || 
+				localAdapter.getCursor().getCount() == 0)
+			return;
+	
+		//Log.e("onScroll", "First:" + firstVisibleItem + "; visible: " + visibleItemCount + "; Total:" +totalItemCount);
+		
+		if (!loading
+				&& ((totalItemCount - visibleItemCount) <= (firstVisibleItem + visibleThreshold))) {
+			
+			String ordersql = "";
+			if(view.getTag(R.string.type).equals("" + TYPE_LATEST))
+				ordersql = DBHelper.ANIME_ID + " DESC LIMIT 0," + (TotalLatest + 10);
+			else if(view.getTag(R.string.type).equals("" + TYPE_TRENDING))
+				ordersql = DBHelper.ANIME_BAYES_RATING + " DESC LIMIT 0, " + (TotalTrending + 10);
+			
+			Cursor newC = getActivity().managedQuery(
+					AnimeProvider.CONTENT_URI,
+					Anime.projection,
+					null,
+					null,
+					ordersql
+					);
+			adapter.changeCursor(newC);
+			
+			if(view.getTag(R.string.type).equals("" + TYPE_LATEST)){
+				new SearchService(this.getSherlockActivity()).execute(
+						Constants.getLatestAnimeURL(10, TotalLatest + 10),
+						SearchFragment.TYPE_LATEST);
+				latestResults = newC;
+				getActivity().stopManagingCursor(latestResults);
+			}
+			else if(view.getTag(R.string.type).equals("" + TYPE_TRENDING)){
+				new SearchService(this.getSherlockActivity()).execute(
+						Constants.getTopAnimeURL(10, TotalTrending + 10),
+						SearchFragment.TYPE_TRENDING);
+				topResults = newC;
+				getActivity().stopManagingCursor(topResults);
+			}
+			loading = true;
+		}
+	}
+
+	@Override
+	public void onScrollStateChanged(AbsListView view, int scrollState) {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }

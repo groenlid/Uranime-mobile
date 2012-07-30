@@ -60,6 +60,7 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 	private ArrayAdapter<CharSequence> list;
 	private ImageAdapter imgAdapter; 
 	/** Called when the activity is first created. */
+
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -145,6 +146,7 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 		    adView.loadAd(request);
 			adView.invalidate();
 		}
+		
 	}
 	
 	@Override
