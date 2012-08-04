@@ -28,7 +28,7 @@ import android.widget.Toast;
 // Just an example from an old project.. Maybe we can use it?
 public class RestClient {
 	
-	private boolean debug = false;
+	private boolean debug = true;
 	private static RestClient instance;
 	private Context c;
 	
@@ -53,7 +53,7 @@ public class RestClient {
 		}
 		DefaultHttpClient httpclient = new DefaultHttpClient();  
         HttpGet request = new HttpGet(url);  
-        request.addHeader("Authorization", "TRUEREST email="+Constants.getUsername(c)+"&password="+Constants.getPassword(c)); 
+        request.addHeader("Authorization", Constants.getUsername(c)+":"+Constants.getPassword(c)); 
         String result = "";
         if(debug)
         	Log.i(LOGTAG,url);
@@ -109,7 +109,7 @@ public class RestClient {
             StringEntity entity = new StringEntity(obj.toString());
             entity.setContentType(new BasicHeader(HTTP.CONTENT_TYPE,
                     "application/json"));
-            request.addHeader("Authorization", "TRUEREST email="+Constants.getUsername(c)+"&password="+Constants.getPassword(c));
+            request.addHeader("Authorization", Constants.getUsername(c)+":"+Constants.getPassword(c));
             request.setEntity(entity);
 
             ResponseHandler<String> handler = new BasicResponseHandler();

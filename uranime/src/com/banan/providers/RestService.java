@@ -235,7 +235,7 @@ public class RestService extends Service
 			
 			ArrayList<Integer> ids = new ArrayList<Integer>();
 			
-			for(Anime r : requests.data.animelist)
+			for(Anime r : requests.animelist)
 			{
 				Cursor shows = getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+r.id, null, null);
 				ContentValues aResult = new ContentValues();
@@ -272,7 +272,7 @@ public class RestService extends Service
 				ids.add(r.id);
 			}
 			
-			for(Anime r : requestsWatchlist.data.animelist)
+			for(Anime r : requestsWatchlist.animelist)
 			{
 
 				Cursor shows = getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+r.id, null, null);
