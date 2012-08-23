@@ -9,9 +9,9 @@ import com.banan.entities.Episode;
 import com.banan.providers.AnimeProvider;
 import com.banan.providers.DBHelper;
 import com.banan.providers.EpisodeProvider;
-import com.nostra13.universalimageloader.core.DecodingType;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
 import android.database.Cursor;
 import android.os.Bundle;
@@ -76,7 +76,7 @@ public class EpisodeFragment extends SherlockFragment{
 					episode_image = "http://placehold.it/" + width + "x" + (int)(0.56*width);
 				else
 					episode_image = Anime.resizeImage(width, 0, episode_image);
-				
+				getActivity().setTitle(animetitle);
 			}
 			
 			String title = episode.getString(episode.getColumnIndexOrThrow(DBHelper.EPISODE_TITLE_COL));
@@ -87,7 +87,7 @@ public class EpisodeFragment extends SherlockFragment{
 
 			
 			
-			getActivity().setTitle(title);
+			
 			
 			ImageView seen = (ImageView) v.findViewById(R.id.seen);
 			ImageView epImageView = (ImageView) v.findViewById(R.id.episode_image);
@@ -95,14 +95,9 @@ public class EpisodeFragment extends SherlockFragment{
 			
 			// Show the image
 			ImageLoader imageLoader = ImageLoader.getInstance();
-			
-			DisplayImageOptions options = new DisplayImageOptions.Builder()
-	        .cacheOnDisc()
-	        .decodingType(DecodingType.MEMORY_SAVING)
-	        .build();
 
 			// Load and display image asynchronously
-			imageLoader.displayImage(episode_image, epImageView,options);
+			imageLoader.displayImage(episode_image, epImageView);
 			
 			
 			if(episode.isNull(episode.getColumnIndexOrThrow(DBHelper.EPISODE_SEEN_COL))){

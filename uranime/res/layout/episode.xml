@@ -65,6 +65,8 @@
 				    android:layout_width="wrap_content"
 				    android:layout_height="wrap_content"
 				    android:layout_gravity="center"
+				    android:background="@drawable/gridview_single_border"
+				    android:padding="1dp"
 				    android:src="@drawable/bglist" />
 	
 	            <TextView

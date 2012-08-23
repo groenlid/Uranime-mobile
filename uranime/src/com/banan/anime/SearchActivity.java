@@ -14,19 +14,20 @@ import com.banan.entities.Anime;
 import com.banan.entities.AnimeRequest;
 import com.banan.entities.Constants;
 import com.banan.fragments.AnimeFragment;
+import com.banan.fragments.AnimeSummaryFragment;
+import com.banan.fragments.EpisodeListFragment;
+import com.banan.fragments.GenreBrowseFragment;
+import com.banan.fragments.LatestAnimeFragment;
 import com.banan.fragments.SearchFragment;
 import com.banan.pagers.PagerShowAdapter;
 import com.banan.providers.AnimeProvider;
 import com.banan.providers.DBHelper;
 import com.banan.providers.RestService;
+import com.banan.providers.TabListener;
 import com.banan.trakt.RestClient;
 import com.banan.anime.R;
 import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
-import com.nostra13.universalimageloader.core.DecodingType;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.viewpagerindicator.TabPageIndicator;
 import com.viewpagerindicator.TitlePageIndicator;
 
@@ -54,71 +55,55 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.TabHost;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class SearchActivity extends BaseActivity implements ActionBar.OnNavigationListener{
 
+	// Variables for the tabs
+	TabHost mTabHost;
+	
 	/** Called when the activity is first created. */
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-		setContentView(R.layout.search_tabs);
+		setContentView(R.layout.anime_tabs);
+		setSupportProgressBarIndeterminateVisibility(false);
 		
-		SearchPageAdapter adapter = new SearchPageAdapter(getSupportFragmentManager());
+		ActionBar bar = getSupportActionBar();
 		
+		bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+	    bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
+	    
+	    bar.addTab(bar.newTab()
+	            .setText("Search")
+	            .setTabListener(new TabListener<SearchFragment>(
+	                    this, "search", SearchFragment.class, null)));
+	    
+	    bar.addTab(bar.newTab()
+	            .setText("Latest")
+	            .setTabListener(new TabListener<LatestAnimeFragment>(
+	                    this, "latest", LatestAnimeFragment.class, null)));
+	    
+	    bar.addTab(bar.newTab()
+	            .setText("Genre")
+	            .setTabListener(new TabListener<GenreBrowseFragment>(
+	                    this, "genre", GenreBrowseFragment.class, null)));
+	    
+	    if (savedInstanceState != null) {
+	        bar.setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
+	    }
 		
-		
-		ViewPager pager = (ViewPager)findViewById(R.id.pager);
-		pager.setAdapter(adapter);
-		
-		TitlePageIndicator indicator = (TitlePageIndicator)findViewById(R.id.indicator);
-		indicator.setViewPager(pager);
-		final SherlockFragmentActivity a = this;
 		
 		// So the user can get logged in without doing an action.
 		Constants.getUserID(this);
 		
-		indicator.setOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-			
-		long minTimeSinceUpdate = Calendar.getInstance().getTimeInMillis() - (1000 * 60 * 60);	
-		
-			public void onPageSelected(int pos) {
-				// TODO Auto-generated method stub
-				// Position 1 is the Latest page.
-				if (pos == 1 && Constants.getLastUpdate(a.getApplicationContext(), SearchFragment.TYPE_LATEST) < minTimeSinceUpdate)
-				{
-					SearchFragment s = new SearchFragment();
-					s.new SearchService(a).execute(Constants.getLatestAnimeURL(10, 0), 
-							 SearchFragment.TYPE_LATEST);
-				}
-				// Position 2 is the Trending page.
-				else if(pos == 2 && Constants.getLastUpdate(a.getApplicationContext(), SearchFragment.TYPE_TRENDING) < minTimeSinceUpdate)
-				{
-					SearchFragment s = new SearchFragment();
-					s.new SearchService(a).execute(Constants.getTopAnimeURL(10,0), 
-							 SearchFragment.TYPE_TRENDING);
-				}
-					
-
-			}
-			
-			public void onPageScrolled(int arg0, float arg1, int arg2) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			public void onPageScrollStateChanged(int arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
-		setSupportProgressBarIndeterminateVisibility(false);
-		
 	}
+	
 	public boolean onNavigationItemSelected(int itemPosition, long itemId) {
 		// TODO Auto-generated method stub
 		return false;
@@ -129,14 +114,12 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 
 		switch (item.getItemId()) {
 		case R.id.menu_update:
-				SearchFragment s = new SearchFragment();
-				s.new SearchService(this).execute(Constants.getLatestAnimeURL(10, 0), 
-						 SearchFragment.TYPE_LATEST);;
-				s.new SearchService(this).execute(Constants.getTopAnimeURL(10,0), 
-						 SearchFragment.TYPE_TRENDING);
-			Toast.makeText(this, R.string.animelist_refresh, Toast.LENGTH_SHORT)
-					.show();
-
+			LatestAnimeFragment s = (LatestAnimeFragment) LatestAnimeFragment.newInstance(null);
+			s.new SearchService(this).execute(Constants.getLatestAnimeURL(10, 0), 
+					 LatestAnimeFragment.TYPE_LATEST);
+			GenreBrowseFragment g = (GenreBrowseFragment) GenreBrowseFragment.newInstance(null);
+			g.new SearchService(this).execute(Constants.REST_GENRE, 
+					GenreBrowseFragment.TYPE_GENRE);
 			break;
 		case R.id.abs__home:
 			return true;
@@ -158,7 +141,7 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 			super(fm);
 		}
 
-		protected final String[] CONTENT = new String[]{ "Search", "Latest", "Trending"};
+		protected final String[] CONTENT = new String[]{ "Search", "Latest"};
 		
 		@Override
 		public Fragment getItem(int position) {

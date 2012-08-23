@@ -14,10 +14,10 @@ import com.banan.entities.Episode;
 import com.banan.providers.AnimeProvider;
 import com.banan.providers.DBHelper;
 import com.banan.providers.EpisodeProvider;
-import com.nostra13.universalimageloader.core.DecodingType;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
 import android.content.Context;
 import android.content.Intent;
@@ -172,10 +172,10 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 				imageLoader = ImageLoader.getInstance();
 				
 				options = new DisplayImageOptions.Builder()
-	            /*.showStubImage(R.drawable.stub_image)*/
-	            .cacheOnDisc()
-	            .decodingType(DecodingType.MEMORY_SAVING)
-	            .build();
+				.cacheInMemory()
+				.cacheOnDisc()
+		        .imageScaleType(ImageScaleType.POWER_OF_2)
+		        .build();
 			}
 
 			@Override
@@ -218,7 +218,7 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 				 }
 				
 				
-				image.setScaleType(ScaleType.MATRIX);
+				image.setScaleType(ScaleType.CENTER_INSIDE);
 				
 				String episode_image = show.getString(show.getColumnIndexOrThrow(DBHelper.ANIME_FANART_COL));
 				if(episode_image == null)
@@ -236,7 +236,7 @@ public class CalendarFragment extends SherlockFragment implements ActionBar.OnNa
 				String animeTitle = show.getString(show.getColumnIndexOrThrow(DBHelper.ANIME_TITLE_COL));
 				String episodeNextTxt = episode.getString(episode.getColumnIndexOrThrow(DBHelper.EPISODE_TITLE_COL));
 				
-				imageLoader.displayImage(episode_image, image, options);
+				imageLoader.displayImage(episode_image, image);
 				
 				showName.setText(animeTitle);
 				episodeNext.setText(episodeNextTxt);

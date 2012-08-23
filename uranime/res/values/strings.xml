@@ -17,6 +17,7 @@
     <string name="preferences">Preferences</string>
     <string name="add_Show">Add Show</string>
     <string name="feedback">Feedback</string>
+    <string name="fetchanimegenre">Fetching anime for specified genre.</string>
     <string name="menu_update_delta">Menu Update Delta</string>
     <string name="email">email</string>
     <string name="password">password</string>
@@ -28,6 +29,7 @@
         <item>Unaired</item>
     </string-array>
     <string-array name="list_type">
+        <item>Library + Watchlist</item>
         <item>Library</item>
         <item>Watchlist</item>
     </string-array>

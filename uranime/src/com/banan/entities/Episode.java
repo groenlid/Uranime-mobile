@@ -11,6 +11,7 @@ public class Episode {
 	public String aired;
 	public String image;
 	public boolean special;
+	public String seen;
 	
 	// Need to add ratings here
 	

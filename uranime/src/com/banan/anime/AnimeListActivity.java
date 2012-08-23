@@ -23,23 +23,30 @@ import com.google.ads.AdRequest.ErrorCode;
 import com.google.ads.AdSize;
 import com.google.ads.AdView;
 import com.google.ads.mediation.admob.AdMobAdapterExtras;
-import com.nostra13.universalimageloader.core.DecodingType;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
+import com.nostra13.universalimageloader.core.assist.SimpleImageLoadingListener;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.view.ViewPager.LayoutParams;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
@@ -50,6 +57,7 @@ import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class AnimeListActivity extends SherlockActivity implements ActionBar.OnNavigationListener, AdListener
@@ -116,12 +124,17 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 			}
 		
 		});
+		//long minTimeSinceAdClick = Calendar.getInstance().getTimeInMillis() - (5000);	
 		
+		/*
 		long minTimeSinceAdClick = Calendar.getInstance().getTimeInMillis() - (1000 * 60 * 60);	
+		
+		AdView adView = (AdView)findViewById(R.id.ad);
+		
 		if(Constants.getLastAdClick(this) < minTimeSinceAdClick)
 		{
 			// ADS
-			AdView adView = (AdView)findViewById(R.id.ad);
+			adView.setVisibility(View.VISIBLE);
 			//AdView adView = new AdView(this, AdSize.SMART_BANNER, "a14f9c8699042f4");
 			//AdView adView = (AdView) findViewById(R.id.ad);
 			
@@ -145,7 +158,10 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 		    // Initiate a generic request to load it with an ad
 		    adView.loadAd(request);
 			adView.invalidate();
-		}
+		}else
+			adView.setVisibility(View.GONE);
+			
+			*/
 		
 	}
 	
@@ -180,7 +196,9 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 			{
 				ArrayList<String> param = new ArrayList<String>();
 				do{
-					param.add(""+imgAdapter.getCursor().getInt(imgAdapter.getCursor().getColumnIndexOrThrow(DBHelper.ANIME_ID)));
+					String status = imgAdapter.getCursor().getString(imgAdapter.getCursor().getColumnIndexOrThrow(DBHelper.ANIME_STATUS_COL));
+					if(status == null || (status != null && !status.equals("finished")))
+						param.add(""+imgAdapter.getCursor().getInt(imgAdapter.getCursor().getColumnIndexOrThrow(DBHelper.ANIME_ID)));
 				}while(imgAdapter.getCursor().moveToNext());
 				
 				Intent k = new Intent(this, RestService.class);
@@ -212,7 +230,6 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 		 
 		ImageLoader imageLoader;
 		ImageLoaderConfiguration config;  
-		DisplayImageOptions options;
 		
 		int height;
 		
@@ -226,12 +243,7 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 			final ProgressBar spinner = new ProgressBar(getApplicationContext());
 			
 			imageLoader = ImageLoader.getInstance();
-			
-			options = new DisplayImageOptions.Builder()
-            /*.showStubImage(R.drawable.stub_image)*/
-            .cacheOnDisc()
-            .decodingType(DecodingType.MEMORY_SAVING)
-            .build();
+		
 		}
 
 		@Override
@@ -241,14 +253,14 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 			Resources r = getResources();
 			float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 100, r.getDisplayMetrics());
 			float pxHeight = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 150, r.getDisplayMetrics());
-			
+			final Context con = context;
 			RelativeLayout rl = (RelativeLayout) view.findViewById(R.id.relativeLayoutPoster);
 			
 			GridView.LayoutParams paramsRl = new GridView.LayoutParams((int)px, LayoutParams.FILL_PARENT);
 			rl.setLayoutParams(paramsRl);
 			
 			final ImageView image = (ImageView)view.findViewById(R.id.showImg);
-			//TextView showName = (TextView)view.findViewById(R.id.showName);
+			TextView showName = (TextView)view.findViewById(R.id.showName);
 			
 			image.setScaleType(ScaleType.CENTER_CROP);
 			
@@ -258,11 +270,32 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 				imagestring = Anime.resizeImage((int)px,(int)pxHeight,animePoster);
 			else
 				imagestring = "http://placehold.it/" + (int)px + "x" + (int)(pxHeight);
-			imageLoader.displayImage(imagestring, image, options);
 			
-			//String animeTitle = c.getString(c.getColumnIndexOrThrow(DBHelper.ANIME_TITLE_COL));
+			imageLoader.displayImage(imagestring, image);
 			
-			//showName.setText(animeTitle);
+			/*imageLoader.displayImage(imagestring, image, options, new SimpleImageLoadingListener() {
+				@Override
+				public void onLoadingComplete(Bitmap loadedImage) {
+
+					Animation anim = AnimationUtils.loadAnimation(con, R.anim.fade_in);
+					image.setAnimation(anim);
+					anim.start();
+				}
+			});*/
+			
+			String animeTitle = c.getString(c.getColumnIndexOrThrow(DBHelper.ANIME_TITLE_COL));
+			
+			showName.setText(animeTitle);
+			
+			
+			// Should we show or hide the titles
+			SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+			Boolean useAccount = sp.getBoolean("showtitles", true);
+			
+			if(!useAccount)
+				showName.setVisibility(View.GONE);
+			else
+				showName.setVisibility(View.VISIBLE);
 			
 			return;
 		}
@@ -292,9 +325,10 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 
 	@SuppressLint("NewApi") public boolean onNavigationItemSelected(int itemPosition, long itemId) {
 		String animeIDSQL = "";
+		
 		switch(itemPosition){
 		// Watchlist
-		case(1):
+		case(2):
 			animeIDSQL = DBHelper.ANIME_ID +" IN ("
 				    + "SELECT "+DBHelper.ANIME_ID 
 				    + " FROM " + DBHelper.ANIME_TABLE
@@ -302,6 +336,14 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 				    + ")";
 			break;
 		// Library
+		case(1):
+			animeIDSQL = DBHelper.ANIME_ID +" IN ("
+				    + "SELECT "+DBHelper.EPISODE_ANIME_ID_COL 
+				    + " FROM " + DBHelper.EPISODE_TABLE
+				    + " WHERE " + DBHelper.EPISODE_SEEN_COL + " IS NOT NULL "
+				    + " GROUP BY " + DBHelper.EPISODE_ANIME_ID_COL
+				    + ")";
+			break;
 		case(0):
 		default:
 			animeIDSQL = DBHelper.ANIME_ID +" IN ("
@@ -309,7 +351,7 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 				    + " FROM " + DBHelper.EPISODE_TABLE
 				    + " WHERE " + DBHelper.EPISODE_SEEN_COL + " IS NOT NULL "
 				    + " GROUP BY " + DBHelper.EPISODE_ANIME_ID_COL
-				    + ")";
+				    + ") OR " + DBHelper.ANIME_WATCHLIST + " IS NOT NULL";
 			break;
 		}
 		Cursor shows = managedQuery(

@@ -1,8 +1,13 @@
 package com.banan.entities;
 
 public class User {
-	public Data data;
-	public class Data{
-		public String id;
+	
+	public int id;
+	
+	public Error error;
+	
+	private class Error{
+		public String code;
+		public String message;
 	}
 }

@@ -15,10 +15,6 @@ import com.banan.fragments.EpisodeFragment;
 import com.banan.providers.AnimeProvider;
 import com.banan.providers.DBHelper;
 import com.banan.providers.EpisodeProvider;
-import com.nostra13.universalimageloader.core.DecodingType;
-import com.nostra13.universalimageloader.core.DisplayImageOptions;
-import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.viewpagerindicator.TitlePageIndicator;
 
 import android.app.Activity;

@@ -13,7 +13,7 @@ import android.util.Log;
 public class DBHelper extends SQLiteOpenHelper {
 	private static final String TAG = DBHelper.class.getSimpleName();
 	public static final String DB_NAME = "anime.db";
-	public static final int DB_VERS = 3;
+	public static final int DB_VERS = 6;
 	public static final boolean Debug = false;
 	
 	public Context context;
@@ -23,6 +23,9 @@ public class DBHelper extends SQLiteOpenHelper {
 	public static final String EPISODE_TABLE = "episode";
 	public static final String USER_EPISODE_TABLE = "user_episode";
 	public static final String ANIME_RATING_TABLE = "anime_ratings";
+	public static final String SYNONYM_TABLE = "anime_synonyms";
+	public static final String ANIME_GENRE_TABLE = "anime_genre";
+	public static final String GENRE_TABLE = "genre";
 	
 	// ANIME COLUMNS
 	public static final String ANIME_TITLE_COL = "title";
@@ -46,6 +49,23 @@ public class DBHelper extends SQLiteOpenHelper {
 	public static final String EPISODE_ID_COL = "id";
 	public static final String EPISODE_SPECIAL_COL = "episode_special";
 	public static final String EPISODE_IMAGE_COL = "episode_image";
+	
+	// ANIME_SYNONYMS COLUMNS
+	public static final String SYNONYM_ID = "synonym_id";
+	public static final String SYNONYM_TITLE = "synonym_title";
+	public static final String SYNONYM_ANIME_ID = "synonym_anime_id";
+	public static final String SYNONYM_LANG = "synonym_lang";
+	
+	// ANIME_GENRE COLUMNS 
+	public static final String ANIME_GENRE_ID = "anime_genre_id";
+	public static final String ANIME_GENRE_ANIME_ID = "anime_id";
+	public static final String ANIME_GENRE_GENRE_ID = "genre_id";
+	
+	// GENRE COLUMNS
+	public static final String GENRE_ID = "genre_id";
+	public static final String GENRE_NAME = "genre_name";
+	public static final String GENRE_DESC = "genre_desc";
+	public static final String GENRE_IS_GENRE = "is_genre";
 	
 	//USER_EPISODE COLUMNS; THIS IS NOT USED. USE EPISOCE_SEEN INSTEAD.
 	//public static final String USER_EPISODE_USERID_COL = "user_id";
@@ -102,11 +122,15 @@ public class DBHelper extends SQLiteOpenHelper {
 				+ EPISODE_ANIME_ID_COL + " NUMERIC );";
 		db.execSQL(sql2);
 		
-		/*
-		String sql3 = "CREATE TABLE IF NOT EXISTS " + USER_EPISODE_TABLE + " (_id INTEGER PRIMARY KEY, " + USER_EPISODE_EPISODEID_COL + " NUMERIC," + USER_EPISODE_USERID_COL + " NUMERIC, "
-				+ USER_EPISODE_TIMESTAMP_COL + " TEXT );";
+		
+		String sql3 = "CREATE TABLE IF NOT EXISTS " + SYNONYM_TABLE 
+				+ " (_id INTEGER PRIMARY KEY, " 
+				+ SYNONYM_ID + " NUMERIC," 
+				+ SYNONYM_ANIME_ID + " NUMERIC, "
+				+ SYNONYM_LANG + " TEXT, "
+				+ SYNONYM_TITLE + " TEXT );";
 		db.execSQL(sql3);
-		*/
+		
 		
 		String sql4 = "CREATE TABLE IF NOT EXISTS " + ANIME_RATING_TABLE 
 				+ " (_id INTEGER PRIMARY KEY, " 
@@ -114,6 +138,21 @@ public class DBHelper extends SQLiteOpenHelper {
 				+ ANIME_RATING_USERID_COL + " NUMERIC, "
 				+ ANIME_RATING_RATE_COL + " NUMERIC );";
 		db.execSQL(sql4);
+		
+		String sql5 = "CREATE TABLE IF NOT EXISTS " + GENRE_TABLE 
+				+ " (_id INTEGER PRIMARY KEY, " 
+				+ GENRE_ID + " NUMERIC," 
+				+ GENRE_NAME + " TEXT, "
+				+ GENRE_IS_GENRE + " NUMERIC, "
+				+ GENRE_DESC + " TEXT );";
+		db.execSQL(sql5);
+		
+		String sql6 = "CREATE TABLE IF NOT EXISTS " + ANIME_GENRE_TABLE 
+				+ " (_id INTEGER PRIMARY KEY, " 
+				+ ANIME_GENRE_ID + " NUMERIC," 
+				+ ANIME_GENRE_ANIME_ID + " NUMERIC, "
+				+ ANIME_GENRE_GENRE_ID + " NUMERIC );";
+		db.execSQL(sql6);
 		
 		if (Debug) {
 			Log.d(TAG, "onCreate Called.");
@@ -125,6 +164,9 @@ public class DBHelper extends SQLiteOpenHelper {
 		//db.execSQL(String.format("DROP TABLE IF EXISTS %s", ANIME_TABLE));
 		
 		db.beginTransaction();
+		
+		//Check if the tables are missing.
+		this.onCreate(db);
 		
 		try
         {          
@@ -154,8 +196,6 @@ public class DBHelper extends SQLiteOpenHelper {
 	
 	private boolean alterTable(SQLiteDatabase db, String table)
 	{
-		//Check if the tables are missing.
-		this.onCreate(db);
 		
 		// Put in a list the existing columns
 		List<String> columns = DBHelper.GetColumns(db, table);

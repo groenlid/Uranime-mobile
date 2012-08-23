@@ -1,9 +1,11 @@
 package com.banan.fragments;
 
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -51,27 +53,30 @@ import com.banan.anime.SearchActivity;
 import com.banan.entities.Anime;
 import com.banan.entities.AnimeRequest;
 import com.banan.entities.Constants;
+import com.banan.entities.Synonym;
 import com.banan.providers.AnimeProvider;
 import com.banan.providers.DBHelper;
+import com.banan.providers.SynonymProvider;
 import com.banan.trakt.RestClient;
 import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
 import com.google.gson.annotations.SerializedName;
-import com.nostra13.universalimageloader.core.DecodingType;
+import com.google.gson.reflect.TypeToken;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
-public class SearchFragment extends SherlockFragment implements OnScrollListener{
+public class SearchFragment extends SherlockFragment{
 
 	public static final int TYPE_SEARCH = 0;
-	public static final int TYPE_LATEST = 1;
-	public static final int TYPE_TRENDING = 2;
 	
 	SearchLatestAdapter adapter;
 	public static Cursor searchResults;
 	public static Cursor latestResults;
-	public static Cursor topResults;
 	public static ListView lv;
+	public static String textSearch;
+	
 	public static Fragment newInstance(String content) {
 		SearchFragment frag = new SearchFragment();
 		
@@ -86,36 +91,18 @@ public class SearchFragment extends SherlockFragment implements OnScrollListener
 	
 	public String content = null;
 	
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		setRetainInstance(true);
-		//Log.e("content",""+content);
-		if(content == null)
-			return null;
-		
-		
-		if(content.equals("Search"))
-			return createSearchPage(inflater, container, savedInstanceState);
-		else if(content.equals("Latest"))
-			return createLatestPage(inflater, container, savedInstanceState);
-		else if(content.equals("Trending"))
-			return createTopPage(inflater, container, savedInstanceState);
-		else
-			return null;
-		
-	}
+	
 	
 	public void onResume(){
 		super.onResume();
 		if(latestResults == null || latestResults.isClosed())
 			latestResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_ID + " DESC LIMIT 0,10");
-		if(topResults == null || topResults.isClosed())
-			topResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_BAYES_RATING + " DESC LIMIT 0,10");
 		if(adapter != null)
 			adapter.notifyDataSetChanged();
 	}
-	
-	public View createSearchPage(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+		setRetainInstance(true);
 		View v = inflater.inflate(R.layout.search, container, false);
 		
 		ActionBar ab = getSherlockActivity().getSupportActionBar();
@@ -158,6 +145,7 @@ public class SearchFragment extends SherlockFragment implements OnScrollListener
 		  else
 			  adapter = new SearchLatestAdapter(getSherlockActivity(),searchResults);
 		  
+		  adapter.registerDataSetObserver(this);
 		  lv.setOnItemClickListener(new OnItemClickListener() {
 
 				public void onItemClick(AdapterView<?> parent, View view, int pos,
@@ -174,109 +162,47 @@ public class SearchFragment extends SherlockFragment implements OnScrollListener
 				}
 			
 			});
-		  
-		  adapter.registerDataSetObserver(new DataSetObserver() {
-		});
 		
 		  lv.setAdapter(adapter);
 		return v;
 	}
 	
+	private Cursor getSearchCursor(String searchText){
+		Cursor synonymResults = getSherlockActivity().managedQuery(SynonymProvider.CONTENT_URI, Synonym.projection, DBHelper.SYNONYM_TITLE + " LIKE ?", new String[]{"%" + searchText + "%"}, null);
+		
+		if(!synonymResults.moveToFirst())
+			return null;
+		String ids = "";
+		
+		while(!synonymResults.isAfterLast()){
+			ids += synonymResults.getInt(synonymResults.getColumnIndex(DBHelper.SYNONYM_ANIME_ID)) + ",";
+			synonymResults.moveToNext();
+		}
+		ids = ids.substring(0,ids.length()-1);
+		
+		searchResults = getSherlockActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID + " IN("+ids+")", null , DBHelper.ANIME_ID + " DESC");
+		//adapter.changeCursor(searchResults);
+		return searchResults;
+	}
+	
 	private boolean startSearch(String searchText, Button searchBtn){
 		//searchText = DatabaseUtils.sqlEscapeString(searchText);
 		searchBtn.requestFocus();
+		this.textSearch = searchText; 
 		//searchText = searchText.replace("'","\'");
-		new SearchService(getSherlockActivity()).execute(Constants.REST_SEARCH + searchText.replace(" ", "%20") + ".json",
+		new SearchService(getSherlockActivity()).execute(Constants.REST_SEARCH + searchText.replace(" ", "%20"),
 	    		TYPE_SEARCH);
 	    //searchResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_TITLE_COL + " LIKE '%" + searchText + "%'", null, DBHelper.ANIME_ID + " DESC");
-		searchResults = getSherlockActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_TITLE_COL + " LIKE ?", new String[]{"%" + searchText + "%"}, DBHelper.ANIME_ID + " DESC");
-		adapter.changeCursor(searchResults);
+		
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
+			adapter.changeCursor(getSearchCursor(searchText));//changeCursor();
+		else
+			adapter.swapCursor(getSearchCursor(searchText));//changeCursor();
 		
 		Toast.makeText(this.getSherlockActivity(), R.string.searching, Toast.LENGTH_LONG).show();
 		
 		//Log.e("search",searchResults.);
 	    return true;
-	}
-
-	public View createLatestPage(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		View v = inflater.inflate(R.layout.animelist_view, container, false);
-
-		ListView lv = (ListView) v.findViewById(R.id.animelist);
-		latestResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_ID + " DESC LIMIT 0,10");
-		
-		getActivity().stopManagingCursor(latestResults);
-		
-		adapter = new SearchLatestAdapter(getActivity(),
-				latestResults);
-		/*if (latestResults.size() == 0)
-			new SearchService().execute(Constants.REST_LATEST_ANIME, ""
-					+ TYPE_LATEST, this.getActivity());*/
-		
-		lv.setTag(R.string.type, "" + TYPE_LATEST);
-		
-		lv.setOnScrollListener(this);
-		
-		lv.setOnItemClickListener(new OnItemClickListener() {
-
-			public void onItemClick(AdapterView<?> parent, View view, int pos,
-					long id) {			
-				if(!adapter.getCursor().moveToPosition(pos))	
-					return;
-				
-				int anime_id = adapter.getCursor().getInt(adapter.getCursor().getColumnIndexOrThrow(DBHelper.ANIME_ID));
-
-				Intent i = new Intent(getActivity().getApplicationContext(),
-						AnimeActivity.class);
-				i.putExtra("anime_id", ""+anime_id);
-				startActivity(i);
-			}
-
-		});
-
-		lv.setAdapter(adapter);
-
-		return v;
-	}
-	
-	public View createTopPage(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		View v = inflater.inflate(R.layout.animelist_view, container, false);
-
-		ListView lv = (ListView) v.findViewById(R.id.animelist);
-		topResults = getActivity().managedQuery(AnimeProvider.CONTENT_URI, Anime.projection, null, null, DBHelper.ANIME_BAYES_RATING + " DESC LIMIT 0,10");
-		
-		getActivity().stopManagingCursor(topResults);
-		
-		adapter = new SearchLatestAdapter(getSherlockActivity(),
-				topResults);
-		/*if (latestResults.size() == 0)
-			new SearchService().execute(Constants.REST_LATEST_ANIME, ""
-					+ TYPE_LATEST, this.getActivity());*/
-		lv.setTag(R.string.type, "" + TYPE_TRENDING);
-		
-		lv.setOnScrollListener(this);
-		
-		lv.setOnItemClickListener(new OnItemClickListener() {
-
-			public void onItemClick(AdapterView<?> parent, View view, int pos,
-					long id) {			
-				if(!adapter.getCursor().moveToPosition(pos))	
-					return;
-				
-				int anime_id = adapter.getCursor().getInt(adapter.getCursor().getColumnIndexOrThrow(DBHelper.ANIME_ID));
-
-				Intent i = new Intent(getActivity().getApplicationContext(),
-						AnimeActivity.class);
-				i.putExtra("anime_id", ""+anime_id);
-				startActivity(i);
-			}
-
-		});
-
-		lv.setAdapter(adapter);
-
-		return v;
 	}
 	
 	@Override
@@ -304,12 +230,17 @@ public class SearchFragment extends SherlockFragment implements OnScrollListener
 			super(context, c);
 			
 			options = new DisplayImageOptions.Builder()
-            /*.showStubImage(R.drawable.stub_image)*/
-            .cacheOnDisc()
-            .decodingType(DecodingType.MEMORY_SAVING)
-            .build();
+			.cacheInMemory()
+			.cacheOnDisc()
+	        .imageScaleType(ImageScaleType.POWER_OF_2)
+	        .build();
 			
 			imageLoader = ImageLoader.getInstance();
+		}
+
+		public void registerDataSetObserver(SearchFragment searchFragment) {
+			// TODO Auto-generated method stub
+			
 		}
 
 		@Override
@@ -359,55 +290,76 @@ public class SearchFragment extends SherlockFragment implements OnScrollListener
 		
 		Gson gson = new Gson();
 		
-		AnimeRequest requests = gson.fromJson(response,AnimeRequest.class);
+		// Since the json includes arraylist with string numbers
+		// we need to add a type for gson
 		
-		/*
-		 * 
-		 * */
-		if(requests == null || requests.getAnimelist() == null)
-			return 0;
-		for(Anime r : requests.getAnimelist())
-		{
-			/**
-			 * TODO: NEED to remove this in the next version.. Use cursoradapter instead.
-			 */
-			/*if(type== TYPE_SEARCH)
-				searchResults.add(r); // for backwards-compatibility
-			else if(type == TYPE_LATEST)
-				latestResults.add(r);*/
+		Type gsonType = new TypeToken<Map<String, Anime>>() {}.getType();
+		
+		try{
+	
 			
-			// Check if the anime exists in the database
-				
-			Cursor shows = c.getContentResolver().query(
-					AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+r.id, null, null);
+			Map<String, Anime> requests = gson.fromJson(response,gsonType);
 			
-			// If it exists.. we do not add it to the database
-			if(shows.getCount() != 0)
-				continue;
-			
-			ContentValues result = new ContentValues();
-			
-			result.put(DBHelper.ANIME_DESC_COL, r.desc);
-			result.put(DBHelper.ANIME_FANART_COL, r.fanart);
-			result.put(DBHelper.ANIME_IMAGE_COL, r.image);
-			result.put(DBHelper.ANIME_STATUS_COL, r.status); // NOTHING HERE?
-			result.put(DBHelper.ANIME_TITLE_COL, r.title);
-			result.put(DBHelper.ANIME_ID, r.id);
-			result.put(DBHelper.ANIME_BAYES_RATING, r.bayes);
-			
-			c.getContentResolver().insert(AnimeProvider.CONTENT_URI, result); // We add the anime to the database..
-			
-			if(type== TYPE_TRENDING){
-				Constants.setLastUpdate(c, TYPE_TRENDING, Calendar.getInstance().getTimeInMillis());
-				
-			}
-			else if(type == TYPE_LATEST)
+			/*
+			 * 
+			 * */
+			if(requests == null || requests.isEmpty())
+				return 0;
+			//for(Anime r : requests.getAnimelist())
+			for(Map.Entry<String, Anime> entry : requests.entrySet())
 			{
-				Constants.setLastUpdate(c, TYPE_LATEST, Calendar.getInstance().getTimeInMillis());
+				Anime r = entry.getValue();
+				/**
+				 * TODO: NEED to remove this in the next version.. Use cursoradapter instead.
+				 */
+				// Check if the anime exists in the database
+					
+				Cursor shows = c.getContentResolver().query(
+						AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+r.id, null, null);
+				
+				
+				
+				ContentValues result = new ContentValues();
+				
+				result.put(DBHelper.ANIME_DESC_COL, r.desc);
+				result.put(DBHelper.ANIME_FANART_COL, r.fanart);
+				result.put(DBHelper.ANIME_IMAGE_COL, r.image);
+				result.put(DBHelper.ANIME_STATUS_COL, r.status); // NOTHING HERE?
+				result.put(DBHelper.ANIME_TITLE_COL, r.title);
+				result.put(DBHelper.ANIME_ID, r.id);
+				result.put(DBHelper.ANIME_BAYES_RATING, r.bayes);
+				
+				// If it exists.. we do not add it to the database but update it
+				if(shows.getCount() == 0)
+					c.getContentResolver().insert(AnimeProvider.CONTENT_URI, result); // We add the anime to the database..
+				else
+					c.getContentResolver().update(AnimeProvider.CONTENT_URI, result, DBHelper.ANIME_ID +"="+r.id, null);
+				
+				shows.close();
+				
+				for(Synonym s : r.getSynonyms())
+				{
+					Cursor synonym = c.getContentResolver().query(SynonymProvider.CONTENT_URI, Synonym.projection, DBHelper.SYNONYM_ID+"="+s.id, null, null);
+					ContentValues synonymContent = new ContentValues();
+					synonymContent.put(DBHelper.SYNONYM_ID, s.id);
+					synonymContent.put(DBHelper.SYNONYM_ANIME_ID, s.anime_id);
+					synonymContent.put(DBHelper.SYNONYM_TITLE, s.title);
+					synonymContent.put(DBHelper.SYNONYM_LANG, s.lang);
+					
+					if(synonym.getCount() == 0)
+						c.getContentResolver().insert(SynonymProvider.CONTENT_URI, synonymContent);
+					else
+						c.getContentResolver().update(SynonymProvider.CONTENT_URI, synonymContent, DBHelper.SYNONYM_ID +"="+s.id, null);
+					if(DBHelper.Debug)
+						Log.e("SearchFragment", "Anime " + r.title + " is also called " + s.title);
+					synonym.close();
+				}
+				
 			}
-			
+			return requests.size();
+		} catch (JsonParseException e){
+		  return 0;
 		}
-		return requests.getAnimelist().size();
 		//Log.e("tag",query);
 	}
 	
@@ -456,79 +408,26 @@ public class SearchFragment extends SherlockFragment implements OnScrollListener
             //Dialog.dismiss();
         	if(adapter != null)
         		adapter.notifyDataSetChanged();
+
+        	// Requery the cursor after searching. Fixes returned null on first
+        	// query,
+        	if(SearchFragment.textSearch != null && type == TYPE_SEARCH)
+	        	if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
+	    			adapter.changeCursor(getSearchCursor(SearchFragment.textSearch));//changeCursor();
+	    		else
+	    			adapter.swapCursor(getSearchCursor(SearchFragment.textSearch));//changeCursor();
+        	
         	if(lv != null)
         		lv.invalidate();
         	if(a != null)
         		a.setSupportProgressBarIndeterminateVisibility(false);
         	if(b != null)
         		b.setSupportProgressBarIndeterminateVisibility(false);
-        	loading = false;
-        	if(type == TYPE_LATEST)
-        		TotalLatest += resultAmount;
-        	else if(type == TYPE_TRENDING)
-        		TotalTrending += resultAmount;
         	
-        	Toast.makeText(c, "Found " + resultAmount + " anime(s) online.", Toast.LENGTH_SHORT).show();
+        	if(type == TYPE_SEARCH)
+        		Toast.makeText(c, "Found " + resultAmount + " anime(s) online.", Toast.LENGTH_SHORT).show();
         }
         
     }
-	
-	// Endless scrolling variables
-	private int visibleThreshold = 1;
-	private static int TotalLatest = 0;
-	private static int TotalTrending = 0;
-	private static boolean loading = false;
 
-	public void onScroll(AbsListView view, int firstVisibleItem,
-			int visibleItemCount, int totalItemCount) {
-		
-		SearchLatestAdapter localAdapter = (SearchLatestAdapter) view.getAdapter();
-		if(localAdapter == null || localAdapter.getCursor() == null || 
-				localAdapter.getCursor().getCount() == 0)
-			return;
-	
-		//Log.e("onScroll", "First:" + firstVisibleItem + "; visible: " + visibleItemCount + "; Total:" +totalItemCount);
-		
-		if (!loading
-				&& ((totalItemCount - visibleItemCount) <= (firstVisibleItem + visibleThreshold))) {
-			
-			String ordersql = "";
-			if(view.getTag(R.string.type).equals("" + TYPE_LATEST))
-				ordersql = DBHelper.ANIME_ID + " DESC LIMIT 0," + (TotalLatest + 10);
-			else if(view.getTag(R.string.type).equals("" + TYPE_TRENDING))
-				ordersql = DBHelper.ANIME_BAYES_RATING + " DESC LIMIT 0, " + (TotalTrending + 10);
-			
-			Cursor newC = getActivity().managedQuery(
-					AnimeProvider.CONTENT_URI,
-					Anime.projection,
-					null,
-					null,
-					ordersql
-					);
-			adapter.changeCursor(newC);
-			
-			if(view.getTag(R.string.type).equals("" + TYPE_LATEST)){
-				new SearchService(this.getSherlockActivity()).execute(
-						Constants.getLatestAnimeURL(10, TotalLatest + 10),
-						SearchFragment.TYPE_LATEST);
-				latestResults = newC;
-				getActivity().stopManagingCursor(latestResults);
-			}
-			else if(view.getTag(R.string.type).equals("" + TYPE_TRENDING)){
-				new SearchService(this.getSherlockActivity()).execute(
-						Constants.getTopAnimeURL(10, TotalTrending + 10),
-						SearchFragment.TYPE_TRENDING);
-				topResults = newC;
-				getActivity().stopManagingCursor(topResults);
-			}
-			loading = true;
-		}
-	}
-
-	@Override
-	public void onScrollStateChanged(AbsListView view, int scrollState) {
-		// TODO Auto-generated method stub
-		
-	}
-	
 }

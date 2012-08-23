@@ -14,10 +14,10 @@ import com.banan.providers.RestService;
 import com.banan.UIElements.CheckBox;
 import com.banan.anime.EpisodeActivity;
 import com.banan.anime.R;
-import com.nostra13.universalimageloader.core.DecodingType;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -117,8 +117,6 @@ public class AnimeFragment extends SherlockFragment {
 		TextView episodes = (TextView) v.findViewById(R.id.anime_episodes);
 		TextView time = (TextView) v.findViewById(R.id.anime_time);
 		TextView aired = (TextView) v.findViewById(R.id.anime_aired);
-		Button watchlistButton = (Button) v.findViewById(R.id.add_to_watchlist);
-		
 		
 		Display display = getActivity().getWindowManager().getDefaultDisplay();
 		int width = display.getWidth();
@@ -135,9 +133,9 @@ public class AnimeFragment extends SherlockFragment {
 		ImageLoader imageLoader = ImageLoader.getInstance();
 		
 		DisplayImageOptions options = new DisplayImageOptions.Builder()
-        /*.showStubImage(R.drawable.stub_image)*/
-        .cacheOnDisc()
-        .decodingType(DecodingType.MEMORY_SAVING)
+		.cacheInMemory()
+		.cacheOnDisc()
+        .imageScaleType(ImageScaleType.POWER_OF_2)
         .build();
 
 		// Load and display image asynchronously
@@ -187,67 +185,10 @@ public class AnimeFragment extends SherlockFragment {
 				"=" + anime_id,null,null);
 		
 		// Register on dataset Change event.
-		user_seen.registerContentObserver(new MyContentObserver(new Handler(), v, user_seen, anime_episodes));
+		/*user_seen.registerContentObserver(new MyContentObserver(new Handler(), v, user_seen, anime_episodes));
 		anime_episodes.registerContentObserver(new MyContentObserver(new Handler(), v, user_seen, anime_episodes));
 		
-		updateProcessValues(v, user_seen, anime_episodes, count_column);
-
-		// Watchlist
-		
-		if(watchlist == null)
-		{
-			watchlistButton.setText("Add to watchlist");
-			watchlistButton.setOnClickListener(new OnClickListener() {
-
-				@Override
-				public void onClick(View view) {
-					// Update anime column watchlist to true.
-					// Update anime column watchlist to true.
-					ArrayList<String> param = new ArrayList<String>();
-					param.add(anime_id);
-					param.add("true"); // Should rather be timestamp.
-					/** TODO: Convert to timestamp */
-					
-					Intent i = new Intent(getActivity(), RestService.class);
-					i.putExtra(RestService.ACTION, RestService.PUT);
-					i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_WATCHLIST);
-					i.putExtra(RestService.PARAMS, param);
-					getActivity().startService(i);
-					
-					Button b = (Button)view;
-					b.setText("Added to your watchlist");
-					b.setClickable(false);
-					b.setOnClickListener(null);
-				}
-				
-			});
-		}else
-		{
-			watchlistButton.setText("Remove from watchlist");
-			watchlistButton.setOnClickListener(new OnClickListener() {
-
-				@Override
-				public void onClick(View view) {
-					// Update anime column watchlist to false.
-					ArrayList<String> param = new ArrayList<String>();
-					param.add(anime_id);
-					param.add("false"); // Should rather be timestamp.
-					/** TODO: Convert to timestamp */
-					
-					Intent i = new Intent(getActivity(), RestService.class);
-					i.putExtra(RestService.ACTION, RestService.PUT);
-					i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_WATCHLIST);
-					i.putExtra(RestService.PARAMS, param);
-					getActivity().startService(i);
-					
-					Button b = (Button)view;
-					b.setText("Removed from your watchlist");
-					b.setClickable(false);
-					b.setOnClickListener(null);
-				}
-				
-			});
-		}
+		updateProcessValues(v, user_seen, anime_episodes, count_column);*/
 		
 		
 		return v;
@@ -271,7 +212,7 @@ public class AnimeFragment extends SherlockFragment {
 			// Fetch new episode... User is possibly using search.
 			Intent i = new Intent(getActivity(), RestService.class);
 			i.putExtra(RestService.ACTION, RestService.GET);
-			i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_EPISODE);
+			i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_ANIME);
 			i.putExtra(RestService.PARAMS, params);
 			getActivity().startService(i);
             
@@ -408,10 +349,10 @@ public class AnimeFragment extends SherlockFragment {
 			imageLoader = ImageLoader.getInstance();
 			
 			options = new DisplayImageOptions.Builder()
-            .showStubImage(R.drawable.stub_image)
-            .cacheOnDisc()
-            .decodingType(DecodingType.MEMORY_SAVING)
-            .build();
+			.cacheInMemory()
+			.cacheOnDisc()
+	        .imageScaleType(ImageScaleType.POWER_OF_2)
+	        .build();
 		}
 
 		@Override
@@ -473,7 +414,7 @@ public class AnimeFragment extends SherlockFragment {
 
 	}
 	
-	class MyContentObserver extends ContentObserver {
+	/*class MyContentObserver extends ContentObserver {
 		
 		public Cursor user_seen, anime_episodes;
 		View v;
@@ -492,19 +433,16 @@ public class AnimeFragment extends SherlockFragment {
 
 	    @Override
 	    public void onChange(boolean selfChange) {
-	    	updateProcessValues(v, user_seen, anime_episodes, count_column);
+	    	//updateProcessValues(v, user_seen, anime_episodes, count_column);
 	    }
-	}
+	}*/
 	
-	public static void updateProcessValues(View v, Cursor user_seen, Cursor anime_episodes,String count_column){
+	/*public static void updateProcessValues(View v, Cursor user_seen, Cursor anime_episodes,String count_column){
     	user_seen.moveToFirst();
 		anime_episodes.moveToFirst();
 		
 		// Update progressbar with the user seen episodes
 		// 
-		/**
-		 * TODO: When user updates an episode as seen, this function does not execute.. WHY???!!
-		 */
 		int user_seen_results = user_seen.getInt(user_seen.getColumnIndexOrThrow(count_column));
 		int anime_episodes_results = anime_episodes.getInt(anime_episodes.getColumnIndexOrThrow(count_column));
 		
@@ -518,5 +456,5 @@ public class AnimeFragment extends SherlockFragment {
 		progressBar.setProgress(percent);
 
 		v.invalidate();
-	}
+	}*/
 }

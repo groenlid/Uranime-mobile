@@ -59,7 +59,7 @@
 	</style>
 	
       
-    <!-- 
+    <!--  
     <style name="StyledIndicators" parent="@style/Theme.Sherlock">
         <item name="vpiCirclePageIndicatorStyle">@style/CustomCirclePageIndicator</item>
         <item name="vpiTitlePageIndicatorStyle">@style/CustomTitlePageIndicator</item>
@@ -93,7 +93,7 @@
     <style name="CustomTabPageIndicator.Text" parent="Widget.TabPageIndicator.Text">
         <item name="android:textColor">#FF555555</item>
     </style>
-    -->
+   -->
     
     <color name="white">#fff</color>
     <color name="description_grey">#84898d</color>

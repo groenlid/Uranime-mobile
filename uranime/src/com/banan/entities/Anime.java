@@ -1,5 +1,9 @@
 package com.banan.entities;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+
 import android.util.Log;
 
 import com.banan.providers.DBHelper;
@@ -14,6 +18,7 @@ public class Anime{
 		DBHelper.ANIME_SCRAPE_REQUEST};
 	
 	public static String[] projection_only_id = {"_id",DBHelper.ANIME_ID};
+	
 	public String title;
 	
 	public int id;
@@ -21,10 +26,8 @@ public class Anime{
 	// Enum?
 	public String desc;
 	
-	// Link to thetvdb.com
 	public String image;
 	
-	// Link to tvrage.com
 	public String fanart;
 	
 	public String status;
@@ -32,6 +35,34 @@ public class Anime{
 	public Double bayes;
 	
 	public int runtime;
+	
+	public String watchlist; // null if not in watchlist, timestamp otherwise
+	
+	public Map<String, Episode> episodes;
+	
+	public Map<String, Synonym> synonyms;
+	
+	public Map<String, Genre> tags;
+	
+	public Collection<Episode> getEpisodes()
+	{
+		if(episodes == null)
+			return new ArrayList<Episode>();
+		return episodes.values();
+	}
+	
+	public Collection<Genre> getTags() {
+		if(tags == null)
+			return new ArrayList<Genre>();
+		return tags.values();
+	}
+	
+	public Collection<Synonym> getSynonyms()
+	{
+		if(synonyms == null)
+			return new ArrayList<Synonym>();
+		return synonyms.values();
+	}
 	
 	public String getImage(int width){
 		return Constants.IMAGE_RESIZE + image + "/" + width;
@@ -46,13 +77,18 @@ public class Anime{
 	 */
 	public static String resizeImage(int width, int height, String image){
 		//Log.e("asdasd","http://src.sencha.io/" + width + "/" + height + "/" + Constants.IMAGE_PATH + image);
+		
 		//return "http://src.sencha.io/" + width + "/" + height + "/" + Constants.IMAGE_PATH + image; 
+		
+		
 		if(width == -1 || height == -1)
 			return Constants.IMAGE_RESIZE + image;
 		return Constants.IMAGE_RESIZE + image + "/" + width + "/" + height;
+		
 	}
 	
 	public String getFanart(int width){
 		return "http://src.sencha.io/" + width + "/" + fanart;
 	}
+	
 }

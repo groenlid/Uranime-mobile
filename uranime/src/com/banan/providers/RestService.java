@@ -3,13 +3,19 @@ package com.banan.providers;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.banan.entities.AnimeGenre;
 import com.banan.entities.AnimeRequest;
 import com.banan.entities.Constants;
 import com.banan.entities.Episode;
 import com.banan.entities.EpisodeList;
 import com.banan.entities.Anime;
-import com.banan.entities.UserEpisode;
-import com.banan.entities.UserEpisodeList;
+import com.banan.entities.Genre;
+import com.banan.entities.Synonym;
+import com.banan.entities.UserList;
 import com.banan.trakt.RestClient;
 import com.banan.anime.R;
 import com.google.gson.Gson;
@@ -101,7 +107,6 @@ public class RestService extends Service
 			
 			ArrayList<String> listparam = (ArrayList<String>)params[2];
 			
-			String department, type;
 			switch(method_type){
 			case RestService.GET:
 				switch(object_type){
@@ -111,15 +116,12 @@ public class RestService extends Service
 					case RestService.OBJECT_TYPE_ANIME:
 						FETCH_ANIME(getApplicationContext(), listparam, null);
 					break;
-					case RestService.OBJECT_TYPE_EPISODE:
-						FETCH_ANIME_EPISODES(getApplicationContext(),Integer.parseInt(listparam.get(0)),null);
-					break;
 				}
 				break;
 			case RestService.PUT:
 				switch(object_type){
 				case RestService.OBJECT_TYPE_EPISODE:
-					RestService.MARK_EPISODE_AS_WATCHED(getApplicationContext(), Integer.parseInt(listparam.get(0)),listparam.get(1),null);
+					RestService.MARK_EPISODE_AS_WATCHED(getApplicationContext(), Integer.parseInt(listparam.get(0)), true, null);
 					break;
 				case RestService.OBJECT_TYPE_WATCHLIST:
 					RestService.CHANGE_ANIME_WATCHLIST(getApplicationContext(), Integer.parseInt(listparam.get(0)), listparam.get(1), null);
@@ -131,7 +133,7 @@ public class RestService extends Service
 			case RestService.DELETE:
 				switch(object_type){
 				case RestService.OBJECT_TYPE_EPISODE:
-					RestService.MARK_EPISODE_AS_UNWATCHED(getApplicationContext(), Integer.parseInt(listparam.get(0)), null);
+					RestService.MARK_EPISODE_AS_WATCHED(getApplicationContext(), Integer.parseInt(listparam.get(0)), false, null);
 					break;
 				}
 				break;
@@ -196,75 +198,49 @@ public class RestService extends Service
 		private boolean GET_USER_ANIME(){
 			RestClient rest = RestClient.getInstance(getApplicationContext());
 			
-			//Log.e("TAG","debug");
-			
 			Context c = getApplicationContext();
 			String userid = "";
-			
-			
 			
 			if(Constants.getUserID(c).equals(Constants.NO_ID))
 				return false;
 			else
 				userid = Constants.getUserID(c);
 			
-			String response = rest.ReadMethod(Constants.REST_USER_LIBRARY + userid + ".json");
+			String response = rest.ReadMethod(Constants.REST_USER_LIBRARY_WATCHLIST + userid + ".json");
 			
 			Gson gson = new Gson();
 
-			AnimeRequest requests = gson.fromJson(response,AnimeRequest.class);
+			UserList requests = gson.fromJson(response,UserList.class);
 			
 			if(requests == null)
 				return false;
 			
-			String responseWatchlist = rest.ReadMethod(Constants.REST_USER_WATCHLIST + userid + ".json");
-			
-			AnimeRequest requestsWatchlist = gson.fromJson(responseWatchlist,AnimeRequest.class);
-			
-			if(requestsWatchlist == null)
-				return false;
-			
-			int amount = requests.getAnimelist().size() + requestsWatchlist.getAnimelist().size();
+			int amount = requests.getTotalSize();
 			int current = 0;
 			
 			// Reset episodes seen before registering the new one
 			ContentValues nullPointer = new ContentValues();
 			nullPointer.putNull(DBHelper.EPISODE_SEEN_COL);
 			int nullRows = getContentResolver().update(EpisodeProvider.CONTENT_URI , nullPointer, DBHelper.EPISODE_SEEN_COL + " IS NOT NULL", null);
+			
+			// Reset watchlist statistics
+			ContentValues nullPointerWatchlist = new ContentValues();
+			nullPointerWatchlist.putNull(DBHelper.ANIME_WATCHLIST);
+			int nullRowsWatchlist = getContentResolver().update(AnimeProvider.CONTENT_URI , nullPointerWatchlist, DBHelper.ANIME_WATCHLIST + " IS NOT NULL", null);
+			
 			//Log.e("Episode seen purge", "Purged " + nullRows + " episodes");
 			
 			ArrayList<Integer> ids = new ArrayList<Integer>();
 			
-			for(Anime r : requests.animelist)
+			for(UserList.UserSeen r : requests.Library)
 			{
-				Cursor shows = getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+r.id, null, null);
-				ContentValues aResult = new ContentValues();
 				
-				aResult.put(DBHelper.ANIME_DESC_COL, r.desc);
-				aResult.put(DBHelper.ANIME_FANART_COL, r.fanart);
-				aResult.put(DBHelper.ANIME_IMAGE_COL, r.image);
-				aResult.put(DBHelper.ANIME_STATUS_COL, r.status); // NOTHING HERE?
-				aResult.put(DBHelper.ANIME_TITLE_COL, r.title);
-				aResult.put(DBHelper.ANIME_ID, r.id);
-				aResult.put(DBHelper.ANIME_RUNTIME_COL, r.runtime);
-				
-				// If it does not exist.. we add it to the database
-				if(shows.getCount() == 0)
-					getContentResolver().insert(AnimeProvider.CONTENT_URI, aResult);
-				else if(shows.getCount() == 1)
-					getContentResolver().update(AnimeProvider.CONTENT_URI, aResult, DBHelper.ANIME_ID+"="+r.id , null);
-				else
-					Log.e(TAG, "The db includes duplicates of show with id :" + r.id + " and title: " + r.title);
 				
 				current++;
 				if(ids.contains(r.id))
 					continue;
-								
-				// Fetch the anime's episode
-				RestService.FETCH_ANIME_EPISODES(c,r.id,rest);
 				
-				
-
+				RestService.FETCH_ANIME(c, r.id,rest);
 				
 				double percent = current / (amount*1.0) * 100;
 				//Log.e("2",""+percent);
@@ -272,36 +248,19 @@ public class RestService extends Service
 				ids.add(r.id);
 			}
 			
-			for(Anime r : requestsWatchlist.animelist)
+			for(UserList.UserWatchlist r : requests.Watchlist)
 			{
-
-				Cursor shows = getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+r.id, null, null);
-				ContentValues aResult = new ContentValues();
 				
-				aResult.put(DBHelper.ANIME_DESC_COL, r.desc);
-				aResult.put(DBHelper.ANIME_FANART_COL, r.fanart);
-				aResult.put(DBHelper.ANIME_IMAGE_COL, r.image);
-				aResult.put(DBHelper.ANIME_STATUS_COL, r.status); // NOTHING HERE?
-				aResult.put(DBHelper.ANIME_TITLE_COL, r.title);
-				aResult.put(DBHelper.ANIME_ID, r.id);
-				aResult.put(DBHelper.ANIME_RUNTIME_COL, r.runtime);
-				aResult.put(DBHelper.ANIME_WATCHLIST, "true");
-				
-				// If it does not exist.. we add it to the database
-				if(shows.getCount() == 0)
-					getContentResolver().insert(AnimeProvider.CONTENT_URI, aResult);
-				else if(shows.getCount() == 1)
-					getContentResolver().update(AnimeProvider.CONTENT_URI, aResult, DBHelper.ANIME_ID+"="+r.id , null);
-				else
-					Log.e(TAG, "The db includes duplicates of show with id :" + r.id + " and title: " + r.title);
-				
-				
+		
 				current++;
 				if(ids.contains(r.id))
 					continue;
 				
+				RestService.FETCH_ANIME(c, r.id,rest);
+				
 				// Fetch the anime's episode
-				RestService.FETCH_ANIME_EPISODES(c,r.id,rest);
+				// TODO: Implement private function
+				//RestService.FETCH_ANIME_EPISODES(c,r.id,rest);
 
 				double percent = current / (amount*1.0) * 100;
 				//Log.e("2",""+percent);
@@ -326,58 +285,33 @@ public class RestService extends Service
 		
 	}
 	
-	public static void FETCH_USER_SEEN_EPISODES(Context c, int animeID, RestClient rest){
-		String userID;
-		if(Constants.getUserID(c).equals(Constants.NO_ID))
-			return;
-		else
-			userID = Constants.getUserID(c);
-		
-		// Reset episodes seen before registering the new one
-		ContentValues nullPointer = new ContentValues();
-		nullPointer.putNull(DBHelper.EPISODE_SEEN_COL);
-		int nullRows = c.getContentResolver().update(EpisodeProvider.CONTENT_URI , nullPointer, DBHelper.EPISODE_SEEN_COL + " IS NOT NULL AND "+DBHelper.EPISODE_ANIME_ID_COL +"="+animeID, null);
-		//Log.e("Episode seen purge", "Purged " + nullRows + " episodes");
-		
-		if(rest == null)
-			rest = RestClient.getInstance(c);
-		// Fetch the episodes which the user has seen
-		String userepString = rest.ReadMethod(Constants.REST_USER_EPISODES + animeID + "/" + userID + ".json" );
-		
-		Gson gson = new Gson();
-		
-		UserEpisodeList userepList = gson.fromJson(userepString,UserEpisodeList.class);
-		
-		if(userepList == null)
-			return;
-		
-		for(UserEpisode e : userepList.data.episodes){
-			ContentValues result = new ContentValues();
-			
-			result.put(DBHelper.EPISODE_SEEN_COL, e.timestamp);
-			
-			int rows = c.getContentResolver().update(EpisodeProvider.CONTENT_URI , result, DBHelper.EPISODE_ID_COL+"="+ e.episode_id, null);
-			//Log.e("USER HAS SEEN EPISODE: ", ""+e.episode_id);
-			
-		}
-		
-	}
-	
 	public static void FETCH_ANIME(Context c, int animeID, RestClient rest){
 		
 		if(rest == null)
 			rest = RestClient.getInstance(c);
 		
-		String animeString = rest.ReadMethod(Constants.REST_ANIME + animeID + ".json" );
+		// Check if user is logged in.
+		String userID = Constants.getUserID(c);
+		
+		String animeString = rest.ReadMethod(Constants.REST_ANIME + animeID );
 		
 		Gson gson = new Gson();
 		
-		AnimeRequest animelist = gson.fromJson(animeString,AnimeRequest.class);
+		Anime anime = gson.fromJson(animeString,Anime.class);
 		
-		if(animelist == null)
+		if(anime == null)
 			return;
 		
-		Anime anime = animelist.getAnime();
+		RestService.parse_anime(c, anime);
+		
+		//RestService.FETCH_ANIME_EPISODES(c,animeID,rest);
+	}
+	
+	private static void parse_anime(Context c, Anime anime)
+	{
+		
+		int animeID = anime.id;
+		String userID = Constants.getUserID(c);
 		
 		Cursor shows = c.getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+animeID, null, null);
 		
@@ -391,6 +325,13 @@ public class RestService extends Service
 		aResult.put(DBHelper.ANIME_ID, anime.id);
 		aResult.put(DBHelper.ANIME_RUNTIME_COL, anime.runtime);
 		
+		if(!userID.equals(Constants.NO_ID))
+		{
+			if(anime.watchlist == null)
+				aResult.putNull(DBHelper.ANIME_WATCHLIST);
+			else
+				aResult.put(DBHelper.ANIME_WATCHLIST, anime.watchlist);
+		}
 		// If it does not exist.. we add it to the database
 		if(shows.getCount() == 0)
 			c.getContentResolver().insert(AnimeProvider.CONTENT_URI, aResult);
@@ -399,25 +340,15 @@ public class RestService extends Service
 		else
 			Log.e(TAG, "The db includes duplicates of show with id :" + anime.id + " and title: " + anime.title);
 		
-		RestService.FETCH_ANIME_EPISODES(c,animeID,rest);
-	}
-	
-	public static void FETCH_ANIME_EPISODES(Context c, int animeID, RestClient rest){
-		if(rest == null)
-			rest = RestClient.getInstance(c);
+		shows.close();
 		
-		String epString = rest.ReadMethod(Constants.REST_ANIME_EPISODES + animeID + ".json" );
+		// Update/Insert anime episodes
 		
-		Gson gson = new Gson();
-		
-		EpisodeList epList = gson.fromJson(epString,EpisodeList.class);
-		if(epList == null)
-			return;
-		
-		for(Episode e : epList.data.episodes)
+		for(Episode e : anime.getEpisodes())
 		{
 			//Log.e("EPISODE: ", e.name);
-			Cursor episode = c.getContentResolver().query(EpisodeProvider.CONTENT_URI, Episode.projection, DBHelper.EPISODE_ID_COL+"="+e.id, null, null);
+			// Using custom string select 
+			Cursor episode = c.getContentResolver().query(EpisodeProvider.CONTENT_URI, new String[]{"_id",DBHelper.EPISODE_ID_COL}, DBHelper.EPISODE_ID_COL+"= ?",  new String[]{"" + e.id}, null);
 			
 			ContentValues result = new ContentValues();
 			
@@ -430,13 +361,80 @@ public class RestService extends Service
 			result.put(DBHelper.EPISODE_SPECIAL_COL, e.special);
 			result.put(DBHelper.EPISODE_IMAGE_COL, e.image);
 			
+			if(!userID.equals(Constants.NO_ID))
+			{
+				if(e.seen == null)
+					result.putNull(DBHelper.EPISODE_SEEN_COL);
+				else
+					result.put(DBHelper.EPISODE_SEEN_COL, e.seen);
+			}
+			
 			if(episode.getCount() == 0)
 				c.getContentResolver().insert(EpisodeProvider.CONTENT_URI, result);
 			else
-				c.getContentResolver().update(EpisodeProvider.CONTENT_URI, result, DBHelper.EPISODE_ID_COL +"="+e.id, null);
+				c.getContentResolver().update(EpisodeProvider.CONTENT_URI, result, DBHelper.EPISODE_ID_COL +"= ?", new String[]{"" + e.id} );
+			episode.close();
 		}
 		
-		RestService.FETCH_USER_SEEN_EPISODES(c,animeID,rest);
+		// Update/Insert anime synonyms
+		
+		for(Synonym s : anime.getSynonyms())
+		{
+			Cursor synonym = c.getContentResolver().query(SynonymProvider.CONTENT_URI, Synonym.projection, DBHelper.SYNONYM_ID+"="+s.id, null, null);
+			ContentValues synonymContent = new ContentValues();
+			synonymContent.put(DBHelper.SYNONYM_ID, s.id);
+			synonymContent.put(DBHelper.SYNONYM_ANIME_ID, s.anime_id);
+			synonymContent.put(DBHelper.SYNONYM_TITLE, s.title);
+			synonymContent.put(DBHelper.SYNONYM_LANG, s.lang);
+			
+			if(synonym.getCount() == 0)
+				c.getContentResolver().insert(SynonymProvider.CONTENT_URI, synonymContent);
+			else
+				c.getContentResolver().update(SynonymProvider.CONTENT_URI, synonymContent, DBHelper.SYNONYM_ID +"="+s.id, null);
+			if(DBHelper.Debug)
+				Log.e(TAG, "Anime " + anime.title + " is also called " + s.title);
+			
+			synonym.close();
+		}
+		
+		// Update/Insert anime genres
+		for(Genre g : anime.getTags())
+		{
+			// Add the genres for the anime
+			Cursor genre = c.getContentResolver().query(GenreProvider.CONTENT_URI, Genre.projection, DBHelper.GENRE_ID+"="+g.id, null, null);
+			ContentValues genreContent = new ContentValues();
+			genreContent.put(DBHelper.GENRE_ID, g.id);
+			genreContent.put(DBHelper.GENRE_DESC, g.description);
+			genreContent.put(DBHelper.GENRE_NAME, g.name);
+			genreContent.put(DBHelper.GENRE_IS_GENRE, (g.is_genre != null) ? 1 : null);
+			
+			if(genre.getCount() == 0)
+				c.getContentResolver().insert(GenreProvider.CONTENT_URI, genreContent);
+			else
+				c.getContentResolver().update(GenreProvider.CONTENT_URI, genreContent, DBHelper.GENRE_ID +"="+g.id, null);
+
+			genre.close();
+			
+			// Connect the genres/tags to the anime if it is not already connected
+			Cursor genreAnime = c.getContentResolver().query(
+					AnimeGenreProvider.CONTENT_URI, 
+					AnimeGenre.projection, 
+					DBHelper.ANIME_GENRE_ANIME_ID + "= ? AND " +
+					DBHelper.ANIME_GENRE_GENRE_ID + "= ?", 
+					new String[]{""+anime.id,""+g.id}, 
+					null);
+			
+			ContentValues genreAnimeContent = new ContentValues();
+			genreAnimeContent.put(DBHelper.ANIME_GENRE_ANIME_ID, anime.id);
+			genreAnimeContent.put(DBHelper.ANIME_GENRE_GENRE_ID, g.id);
+			
+			if(genreAnime.getCount() == 0)
+				// We add the link between genre and anime to the database..
+				c.getContentResolver().insert(AnimeGenreProvider.CONTENT_URI, genreAnimeContent); 
+			
+			genreAnime.close();
+			
+		}
 	}
 	
 	/**
@@ -453,7 +451,7 @@ public class RestService extends Service
 		
 		String userid = "";
 		
-		Cursor anime = c.getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+anime_id, null, null);
+		//Cursor animeCursor = c.getContentResolver().query(AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"="+anime_id, null, null);
 		ContentValues result = new ContentValues();
 		
 		if(watched)
@@ -465,118 +463,115 @@ public class RestService extends Service
 		c.getContentResolver().notifyChange(EpisodeProvider.CONTENT_URI, null);
 		
 		if(Constants.getUserID(c).equals(Constants.NO_ID))
-		{
-			if(!anime.moveToFirst())
-				return false;
-			
-			// Check if anime is currently airingSSSSSSSS
-			String animeStatus = anime.getString(anime.getColumnIndexOrThrow(DBHelper.ANIME_STATUS_COL));
-			if(!animeStatus.equals("currently") && animeStatus != null)
-				return false;
-			
-			long lastScrapeSet = anime.getLong(anime.getColumnIndexOrThrow(DBHelper.ANIME_SCRAPE_REQUEST));
-			long lastScrapeSetCriteria = Calendar.getInstance().getTimeInMillis() - (1000 * 60 * 60 * 24);
-			
-			if(anime.isNull(anime.getColumnIndexOrThrow(DBHelper.ANIME_SCRAPE_REQUEST)) || lastScrapeSet < lastScrapeSetCriteria)
-			{
-				// Send scrape request to server
-				int animeid = anime.getInt(anime.getColumnIndexOrThrow(DBHelper.ANIME_ID));
-				String scrapeStatus = rest.ReadMethod(Constants.REST_ANIME_SET_SCRAPE + "/" + animeid + ".json");
-				
-				// Update scrape flag in db
-				ContentValues animeresult = new ContentValues();
-				animeresult.put(DBHelper.ANIME_SCRAPE_REQUEST,Calendar.getInstance().getTimeInMillis());
-				c.getContentResolver().update(AnimeProvider.CONTENT_URI, animeresult, DBHelper.ANIME_ID +"="+anime_id, null);
-				c.getContentResolver().notifyChange(AnimeProvider.CONTENT_URI, null);
-			}
 			return false;
-		}
 		else
 			userid = Constants.getUserID(c);
 		
-		String watchedBooleanString = (watched) ? "true" : "false";
 		
-		String anString = rest.ReadMethod(Constants.REST_WATCH_ANIME + userid + "/" + anime_id + "/" + watchedBooleanString + ".json");
+		Cursor episodesCursor = c.getContentResolver().query(EpisodeProvider.CONTENT_URI, Episode.projection, DBHelper.EPISODE_ANIME_ID_COL+"="+anime_id, null, null);
+		
+		JSONArray episodes = new JSONArray();
+		
+		if(!episodesCursor.moveToFirst())
+			return false;
+		
+		try {
+			while(episodesCursor.moveToNext())
+			{
+				JSONObject episode = new JSONObject();
+				episode.put("id", episodesCursor.getInt(episodesCursor.getColumnIndexOrThrow(DBHelper.EPISODE_ID_COL)));
+				if(watched)
+					episode.put("seen", Constants.timeToString(null));
+				else
+					episode.put("seen", JSONObject.NULL);
+				episodes.put(episode);
+			}
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+			return false;
+		} catch (JSONException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return false;
+		}
+		
+		JSONObject putString = RestClient.createJSONObject();
+		
+		putString = RestClient.addColumn("episodes", episodes);
+		
+		String animeString = rest.PutMethod(Constants.REST_ANIME + anime_id, putString);
+		
+		//Gson gson = new Gson();
+		
+		//Anime anime = gson.fromJson(animeString,Anime.class);
+		
+		//if(anime == null)
+		//	return false;
+		
+		// This is to slow..
+		// RestService.parse_anime(c, anime);
+		
+		//String anString = rest.ReadMethod(Constants.REST_ANIME + "/" + anime_id);
 		
 		/*** TODO: Need to check results from this method **/
 		
 		return true;
 	}
-	public static boolean MARK_EPISODE_AS_UNWATCHED(Context c, int episode_id, RestClient rest){
+	public static boolean MARK_EPISODE_AS_WATCHED(Context c, int episode_id, boolean watched, RestClient rest){
 		if(rest == null)
 			rest = RestClient.getInstance(c);
 		
 		Cursor episode = c.getContentResolver().query(EpisodeProvider.CONTENT_URI, Episode.projection, DBHelper.EPISODE_ID_COL+"="+episode_id, null, null);
 		ContentValues result = new ContentValues();
-		result.putNull(DBHelper.EPISODE_SEEN_COL);
+		if(watched)
+			result.put(DBHelper.EPISODE_SEEN_COL, Constants.timeToString(null));
+		else
+			result.putNull(DBHelper.EPISODE_SEEN_COL);
+		
 		c.getContentResolver().update(EpisodeProvider.CONTENT_URI, result, DBHelper.EPISODE_ID_COL +"="+episode_id, null);
 		c.getContentResolver().notifyChange(EpisodeProvider.CONTENT_URI, null);
+		
 		
 		if(!Constants.getUserID(c).equals(Constants.NO_ID))
 		{	
-			String userid = Constants.getUserID(c);
-			String epString = rest.ReadMethod(Constants.REST_UNWATCH_EPISODE + userid + "/" + episode_id + ".json");
-		}		
-		return true;
-	}
-	
-	public static boolean MARK_EPISODE_AS_WATCHED(Context c, int episode_id, String timestamp, RestClient rest){
-		
-		if(rest == null)
-			rest = RestClient.getInstance(c);
-		
-		String userid = "";
-		
-		Cursor episode = c.getContentResolver().query(EpisodeProvider.CONTENT_URI, Episode.projection, DBHelper.EPISODE_ID_COL+"="+episode_id, null, null);
-		ContentValues result = new ContentValues();
-		result.put(DBHelper.EPISODE_SEEN_COL, timestamp);
-		c.getContentResolver().update(EpisodeProvider.CONTENT_URI, result, DBHelper.EPISODE_ID_COL +"="+episode_id, null);
-		c.getContentResolver().notifyChange(EpisodeProvider.CONTENT_URI, null);
-		
-		if(Constants.getUserID(c).equals(Constants.NO_ID))
-		{
 			if(!episode.moveToFirst())
 				return false;
-			int anime_id = episode.getInt(episode.getColumnIndexOrThrow(DBHelper.EPISODE_ANIME_ID_COL));
-			// If the anime is not finished we try to send rest request to server for scraping
-			Cursor anime = c.getContentResolver().query(
-					AnimeProvider.CONTENT_URI, 
-					Anime.projection, 
-					DBHelper.ANIME_ID+"="+anime_id, 
-					null, 
-					null
-				);
-			if(!anime.moveToFirst())
-				return false;
 			
-			// Check if anime is currently airing
-			String animeStatus = anime.getString(anime.getColumnIndexOrThrow(DBHelper.ANIME_STATUS_COL));
-			if(!animeStatus.equals("currently") && animeStatus != null)
-				return false;
+			int animeid = episode.getInt(episode.getColumnIndexOrThrow(DBHelper.EPISODE_ANIME_ID_COL));
 			
-			long lastScrapeSet = anime.getLong(anime.getColumnIndexOrThrow(DBHelper.ANIME_SCRAPE_REQUEST));
-			long lastScrapeSetCriteria = Calendar.getInstance().getTimeInMillis() - (1000 * 60 * 60 * 24);
+			//String userid = Constants.getUserID(c);
+			//String epString = rest.ReadMethod(Constants.REST_UNWATCH_EPISODE + userid + "/" + episode_id + ".json");
 			
-			if(anime.isNull(anime.getColumnIndexOrThrow(DBHelper.ANIME_SCRAPE_REQUEST)) || lastScrapeSet < lastScrapeSetCriteria)
-			{
-				// Send scrape request to server
-				int animeid = anime.getInt(anime.getColumnIndexOrThrow(DBHelper.ANIME_ID));
-				String scrapeStatus = rest.ReadMethod(Constants.REST_ANIME_SET_SCRAPE + "/" + animeid + ".json");
+			JSONArray episodes = new JSONArray();
+			try {
 				
-				// Update scrape flag in db
-				ContentValues animeresult = new ContentValues();
-				animeresult.put(DBHelper.ANIME_SCRAPE_REQUEST,Calendar.getInstance().getTimeInMillis());
-				c.getContentResolver().update(AnimeProvider.CONTENT_URI, animeresult, DBHelper.ANIME_ID +"="+anime_id, null);
-				c.getContentResolver().notifyChange(AnimeProvider.CONTENT_URI, null);
+				JSONObject episodeObject = new JSONObject();
+				episodeObject.put("id", episode.getInt(episode.getColumnIndexOrThrow(DBHelper.EPISODE_ID_COL)));
+				if(watched)
+					episodeObject.put("seen", Constants.timeToString(null));
+				else
+					episodeObject.put("seen", JSONObject.NULL);
+				episodes.put(episodeObject);
+				
+			} catch (IllegalArgumentException e) {
+				
+				e.printStackTrace();
+				return false;
+			
+			} catch (JSONException e) {
+				
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return false;
+				
 			}
-			return false;
-		}
-		else
-			userid = Constants.getUserID(c);
-		
-		String epString = rest.ReadMethod(Constants.REST_WATCH_EPISODE + userid + "/" + episode_id + ".json");
-		
-		/*** TODO: Need to check results from this method **/
+			
+			JSONObject putString = RestClient.createJSONObject();
+			
+			putString = RestClient.addColumn("episodes", episodes);
+			
+			String animeString = rest.PutMethod(Constants.REST_ANIME + animeid, putString);
+		}		
 		return true;
 	}
 	
@@ -588,10 +583,13 @@ public class RestService extends Service
 		String userid = "";
 		
 		ContentValues result = new ContentValues();
+		
+		String now = Constants.timeToString(null);
+		
 		if(!inWatchlist.equals("true"))
 			result.putNull(DBHelper.ANIME_WATCHLIST); // This should be boolean
 		else
-			result.put(DBHelper.ANIME_WATCHLIST,"true");
+			result.put(DBHelper.ANIME_WATCHLIST,now);
 		c.getContentResolver().update(AnimeProvider.CONTENT_URI, result, DBHelper.ANIME_ID +"="+anime_id, null);
 		c.getContentResolver().notifyChange(EpisodeProvider.CONTENT_URI, null);
 		
@@ -599,9 +597,30 @@ public class RestService extends Service
 		{
 			userid = Constants.getUserID(c);
 			String changes = inWatchlist;//(inWatchlist) ? "true": "false";
-			String epString = rest.ReadMethod(Constants.REST_ANIME_WATCHLIST + userid + "/" + anime_id + "/" + changes + ".json");
+			JSONObject putString = RestClient.createJSONObject();
+			
+			if(inWatchlist.equals("true"))
+				putString = RestClient.addColumn("watchlist", now);
+			else
+				putString = RestClient.addNullColumn("watchlist");
+			
+			String animeString = rest.PutMethod(Constants.REST_ANIME + anime_id, putString);
+			
+			Gson gson = new Gson();
+			
+			Anime anime = gson.fromJson(animeString,Anime.class);
+			
+			if(anime == null)
+				return false;
+			
+			
+			
+			// This is to slow..
+			// RestService.parse_anime(c, anime);
+			
+			//String epString = rest.ReadMethod(Constants.REST_ANIME_WATCHLIST + userid + "/" + anime_id + "/" + changes + ".json");
 		}
-		/*** TODO: Need to check results from this method **/
+		
 		return true;
 	}
 }

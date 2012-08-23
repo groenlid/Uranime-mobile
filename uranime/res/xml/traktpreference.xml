@@ -17,6 +17,9 @@
              android:summary="Auto sync shows and movies with Urani.me"
             />
     </PreferenceCategory>
+   <PreferenceCategory android:title="Style settings" android:key="styleSettingsCategory">
+        <CheckBoxPreference android:key="showtitles" android:title="Show anime titles" android:summary="Display the anime titles in your animelsit" android:defaultValue="true"/>
+    </PreferenceCategory>
     
 
 </PreferenceScreen>

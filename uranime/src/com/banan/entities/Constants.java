@@ -14,10 +14,13 @@ import java.util.Locale;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.text.format.Formatter;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.widget.Toast;
 
 public class Constants {
@@ -26,11 +29,11 @@ public class Constants {
 
 	public static final String APIKEY = "786bdbb42b9d59fd922b21659c488250";
 	
-	public static final String SERVER = "http://groenlid.no-ip.org/";
-
-	public static final String REST_USER_LIBRARY = SERVER + "api/animelist/";
+	public static final String SERVER = "http://api.urani.me/";
 	
-	public static final String REST_USER_WATCHLIST = SERVER + "api/watchlist/";
+	public static final String IMAGESERVER = "http://urani.me/";
+
+	public static final String REST_USER_LIBRARY_WATCHLIST = SERVER + "users/";
 	
 	public static final String REST_WATCH_EPISODE = SERVER + "api/watchepisode/";
 	
@@ -38,7 +41,7 @@ public class Constants {
 	
 	public static final String REST_WATCH_ANIME = SERVER + "api/watchanime/";
 	
-	public static final String REST_SEARCH = SERVER + "api/search/";
+	public static final String REST_SEARCH = SERVER + "search?q=";
 
 	public static final String REST_ANIME = SERVER 
 			+ "anime/";
@@ -53,26 +56,41 @@ public class Constants {
 			+ "api/userepisodes/";
 
 	public static final String REST_LOGIN = SERVER
-			+ "api/checkCredentials/.json";
+			+ "auth/check";
 
 	public static final String REST_ANIME_WATCHLIST = SERVER
 			+ "api/animeWatchlist/";
 	
-	public static final String IMAGE_RESIZE = SERVER + "api/imageresize/";
+	public static final String IMAGE_RESIZE = IMAGESERVER + "api/imageresize/";
 	
 	public static final String REST_ANIME_SET_SCRAPE = SERVER
 			+ "api/setanimescrape/";
 
 	public static final String NO_ID = "";
 
-	public static final String IMAGE_PATH = SERVER
+	public static final String IMAGE_PATH = IMAGESERVER
 			+ "attachments/photos/orginal/";
-	public static final String EPISODE_IMAGE_PATH = SERVER 
+	
+	public static final String EPISODE_IMAGE_PATH = IMAGESERVER 
 			+ "attachments/episodes/"; // + animeid / episodeid.extension
 	
 	public static final int CALENDAR_WEEKS = 20;
+
+	public static final String REST_GENRE = SERVER + "tags";
+	
+	private static final String REST_GENRE_ANIME = SERVER + "search?tag_id=";
 	
 	// USEFULL FUNCTIONS
+	public int dpToPx(Context c, float dp){
+	    Resources resources = c.getResources();
+	    DisplayMetrics metrics = resources.getDisplayMetrics();
+	    float px = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, metrics);
+	    return (int) px;
+	}
+	
+	public static String getGenreAnimeURL(int genre_id) {
+		return Constants.REST_GENRE_ANIME + genre_id;
+	}
 	
 	public static String getLatestAnimeURL(int limit, int offset) {
 		//Log.e("getLatest", "limit: " + limit + "; startingWith: " + offset);
@@ -101,13 +119,15 @@ public class Constants {
 		String password = sp.getString("password", null);
 		
 		Long time = Calendar.getInstance().getTimeInMillis();
+		String insideHash = PrivateConfig.SALT + password + Constants.getUsername(c);
 		
 		String query;
 		try {
 			query = AeSimpleSHA1.SHA1(
-					PrivateConfig.SALT + 
-					password + 
-					(int)(time / 60) + 
+					AeSimpleSHA1.SHA1(
+							PrivateConfig.SALT + 
+							password) + 
+					//(int)(time / 600) + 
 					Constants.getUsername(c));
 		} catch (NoSuchAlgorithmException e) {
 			query = "";
@@ -246,7 +266,7 @@ public class Constants {
 			return input;
 		String returnus = input.substring(0, length);
 		if(appendDots)
-			returnus += returnus + "..";
+			returnus += "..";
 		return returnus;
 	}
 
@@ -282,9 +302,14 @@ public class Constants {
 			User user = gson.fromJson(response, User.class);
 
 			//Log.e(TAG, user.data.id);
-			
-			if (user.data.id != null) {
-				Constants.setUserID(c, user.data.id);
+
+			if(user == null || user.error != null){
+				// Something went wrong... Wrong password?
+				return false;
+			}
+			else if (user.id != 0) {
+				String id = "" + user.id;
+				Constants.setUserID(c, id);
 				return true;
 			}
 			return false;

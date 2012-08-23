@@ -28,15 +28,8 @@
 		    >
 		</GridView>
     </LinearLayout>
-    
-    <LinearLayout android:layout_width="fill_parent"
-        android:id="@+id/ad_layout"
-        android:orientation="vertical"
-        android:gravity="bottom"
-        android:layout_alignParentBottom="true"
-        android:layout_height="wrap_content">
         
-    
+    <!--   android:layout_above="@+id/ad"
   <com.google.ads.AdView android:id="@+id/ad"
                          android:layout_width="wrap_content"
                          android:layout_height="wrap_content"
@@ -46,7 +39,6 @@
                          android:layout_alignParentBottom="true"
                          ads:testDevices="TEST_EMULATOR, 63456F8C03C88999B759C738231FD4D6"
                          ads:loadAdOnCreate="true"/>
-
-	</LinearLayout>
+-->
 
 </RelativeLayout>

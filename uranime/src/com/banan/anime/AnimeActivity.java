@@ -5,22 +5,37 @@ import java.util.ArrayList;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.support.v4.view.ViewPager;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.widget.TabHost;
 import android.widget.Toast;
 
 import com.actionbarsherlock.app.ActionBar;
+import com.actionbarsherlock.app.ActionBar.Tab;
+import com.actionbarsherlock.app.SherlockFragment;
 import com.actionbarsherlock.view.Menu;
 import com.actionbarsherlock.view.MenuItem;
 import com.banan.pagers.PagerShowAdapter;
+import com.banan.providers.AnimeProvider;
+import com.banan.providers.DBHelper;
 import com.banan.providers.RestService;
+import com.banan.providers.TabListener;
 import com.banan.anime.R;
+import com.banan.entities.Anime;
 import com.banan.entities.Constants;
-import com.viewpagerindicator.TabPageIndicator;
-import com.viewpagerindicator.TitlePageIndicator;
+import com.banan.fragments.AnimeSummaryFragment;
+import com.banan.fragments.EpisodeListFragment;
 
 public class AnimeActivity extends BaseActivity implements ActionBar.OnNavigationListener {
 	
+	// Variables for the tabs
+	TabHost mTabHost;
+	String anime_id;
 	
 	/** Called when the activity is first created. */
 	@Override
@@ -28,20 +43,63 @@ public class AnimeActivity extends BaseActivity implements ActionBar.OnNavigatio
 	{
 		super.onCreate(savedInstanceState);
 		
-		setContentView(R.layout.anime_tabs);
+		//if(savedInstanceState == null)
+			setContentView(R.layout.anime_tabs);
 		
-		PagerShowAdapter adapter = new PagerShowAdapter(getSupportFragmentManager());
+		anime_id = getIntent().getStringExtra("anime_id");
 		
-		// So the user can get logged in without doing an action.
-		Constants.getUserID(this);
+		ActionBar bar = getSupportActionBar();
+		//bar.removeAllTabs();
 		
-		ViewPager pager = (ViewPager)findViewById(R.id.pager);
-		pager.setAdapter(adapter);
-		
-		TitlePageIndicator indicator = (TitlePageIndicator)findViewById(R.id.indicator);
-		indicator.setViewPager(pager);
-		
+		// This is for tablet support
+		/*if(getResources().getConfiguration().orientation==Configuration.ORIENTATION_LANDSCAPE)
+        {
+			bar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+			bar.setDisplayOptions(1, ActionBar.DISPLAY_SHOW_TITLE);*/
+			/*
+			AnimeSummaryFragment summary = AnimeSummaryFragment.newInstance();
+			EpisodeListFragment list = EpisodeListFragment.newInstance();
+			
+			//getSupportFragmentManager().beginTransaction().replace(R.id.animeSummary_frag, summary).commit();
+			//getSupportFragmentManager().beginTransaction().replace(R.id.episodeList_frag, list).commit();
+			
+			FragmentManager fragmentManager = getSupportFragmentManager();
+	       FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+	       //add the fragments
+	       fragmentTransaction.add(R.id.frags, summary);
+	       fragmentTransaction.add(R.id.frags, list);
+	       fragmentTransaction.commit();*/
+			
+        //}
+		/*if(getResources().getConfiguration().orientation==Configuration.ORIENTATION_PORTRAIT)
+		{*/
+			bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
+		    bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
+		    
+		    bar.addTab(bar.newTab()
+		            .setText("Summary")
+		            .setTabListener(new TabListener<AnimeSummaryFragment>(
+		                    this, "summary", AnimeSummaryFragment.class, null)));
+	
+		    bar.addTab(bar.newTab()
+		            .setText("Episodes")
+		            .setTabListener(new TabListener<EpisodeListFragment>(
+		                    this, "episodes", EpisodeListFragment.class, null)));
+		    
+		    if (savedInstanceState != null) {
+		        bar.setSelectedNavigationItem(savedInstanceState.getInt("tab", 0));
+		    }
+		//}
 	}
+	
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+	  super.onConfigurationChanged(newConfig);
+	  //setContentView(R.layout.anime_tabs);
+	  
+	}
+	
 	public boolean onNavigationItemSelected(int itemPosition, long itemId) {
 		// TODO Auto-generated method stub
 		return false;
@@ -139,6 +197,32 @@ public class AnimeActivity extends BaseActivity implements ActionBar.OnNavigatio
 					.show();
 
 			break;
+		case R.id.menu_watchlist:
+			Cursor anime = this.managedQuery(
+	    			AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"= ? AND " + DBHelper.ANIME_WATCHLIST + " IS NOT NULL", new String[]{anime_id}, "title ASC");
+	        
+			ArrayList<String> param = new ArrayList<String>();
+			param.add(anime_id);
+			
+	        if(anime.getCount() == 0){
+	        	param.add("true");
+	        	item.setIcon(R.drawable.ic_action_remove);
+	        	item.setTitle("Remove from watchlist");
+	        }
+	        else{
+	        	param.add("false");
+	        	item.setIcon(R.drawable.ic_action_add);
+	        	item.setTitle("Add to watchlist");
+	        }
+	        
+	        Intent i = new Intent(getApplicationContext(), RestService.class);
+			i.putExtra(RestService.ACTION, RestService.PUT);
+			i.putExtra(RestService.OBJECT_TYPE, RestService.OBJECT_TYPE_WATCHLIST);
+			i.putExtra(RestService.PARAMS, param);
+			this.startService(i);
+			Toast.makeText(getApplicationContext(), "Updated watchlist status of anime", Toast.LENGTH_LONG).show();
+			
+			break;
 		case R.id.abs__home:
 			return true;
 		default:
@@ -147,9 +231,28 @@ public class AnimeActivity extends BaseActivity implements ActionBar.OnNavigatio
 		return true;
 	}
 	
+	
+	
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getSupportMenuInflater().inflate(R.menu.anime_menu, menu);
+        
+        MenuItem watchmenu = menu.getItem(3); // the watchlist menu item
+        
+        Cursor anime = this.managedQuery(
+    			AnimeProvider.CONTENT_URI, Anime.projection, DBHelper.ANIME_ID+"= ? AND " + DBHelper.ANIME_WATCHLIST + " IS NOT NULL", new String[]{anime_id}, "title ASC");
+        
+        if(anime.getCount() != 0)
+        {
+        	watchmenu.setIcon(R.drawable.ic_action_remove);
+        	watchmenu.setTitle("Remove from watchlist");
+        }else
+        {
+        	watchmenu.setIcon(R.drawable.ic_action_add);
+        	watchmenu.setTitle("Add to watchlist");
+        }
+        
+        
         return super.onCreateOptionsMenu(menu);
     }
 	
