@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="horizontal"
+  android:layout_width="match_parent"
+  android:layout_height="match_parent"
+  android:id="@+id/frags">
+    <!-- "Fragment A" -->
+   <fragment class="com.banan.fragments.AnimeSummaryFragment"
+            android:id="@+id/animeSummary_frag"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_margin="10dip"
+            android:layout_height="match_parent"/>
+
+    <!-- "Fragment B" -->
+
+    <fragment class="com.banan.fragments.EpisodeListFragment"
+            android:id="@+id/episodeList_frag"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="match_parent" />
+
+</LinearLayout>
