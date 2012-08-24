@@ -13,6 +13,6 @@ bin/
 gen/
 uranime/bin/
 uranime/gen/
-
+uranime/src/com/banan/entities/PrivateConfig.java
 # Local configuration file (sdk path, etc)
 local.properties
