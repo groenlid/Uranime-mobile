@@ -105,11 +105,11 @@ public class EpisodeActivity extends BaseActivity implements ActionBar.OnNavigat
 	            Toast.makeText(this, R.string.animelist_refresh, Toast.LENGTH_SHORT).show();
 	            //Log.e("page",""+pager.getCurrentItem());
 				break;
-			 case R.id.abs__home:
-	                final Intent intent = new Intent(this, AnimeListActivity.class);
-	                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-	                startActivity(intent);
-	                return true;
+//			 case R.id.abs__home: //R.id.abs__home cannot be resolved
+//	                final Intent intent = new Intent(this, AnimeListActivity.class);
+//	                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//	                startActivity(intent);
+//	                return true;
 			default:
 				//return super.onHandleActionBarItemClick(item, position);
 		}

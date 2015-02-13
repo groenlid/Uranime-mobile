@@ -86,8 +86,8 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 		// So the user can get logged in without doing an action.
 		Constants.getUserID(this);
 		
-		list = ArrayAdapter.createFromResource(this, R.array.list_type, R.layout.sherlock_spinner_item);
-		list.setDropDownViewResource(R.layout.sherlock_spinner_dropdown_item);
+		list = ArrayAdapter.createFromResource(this, R.array.list_type, com.actionbarsherlock.R.layout.sherlock_spinner_item);
+		list.setDropDownViewResource(com.actionbarsherlock.R.layout.sherlock_spinner_dropdown_item);
 		
 		getSupportActionBar().setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
 		getSupportActionBar().setListNavigationCallbacks(list, this);
@@ -213,11 +213,11 @@ public class AnimeListActivity extends SherlockActivity implements ActionBar.OnN
 				Toast.makeText(this, "Nothing to refresh. Try a full-refresh or add an anime", Toast.LENGTH_LONG).show();
 			}
 			break;
-		case R.id.abs__home:
-			final Intent intent = new Intent(this, AnimeListActivity.class);
-			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-			startActivity(intent);
-			return true;
+//		case R.id.abs__home:  //R.id.abs__home  cannot be resolved
+//			final Intent intent = new Intent(this, AnimeListActivity.class);
+//			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//			startActivity(intent);
+//			return true;
 		default:
 			// return super.onHandleActionBarItemClick(item, position);
 		}
