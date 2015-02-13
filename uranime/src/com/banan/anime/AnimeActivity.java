@@ -102,7 +102,7 @@ public class AnimeActivity extends BaseActivity implements ActionBar.OnNavigatio
 	
 	public boolean onNavigationItemSelected(int itemPosition, long itemId) {
 		// TODO Auto-generated method stub
-		return false;
+		return false; 
 	}
 	
 	@Override
@@ -223,8 +223,8 @@ public class AnimeActivity extends BaseActivity implements ActionBar.OnNavigatio
 			Toast.makeText(getApplicationContext(), "Updated watchlist status of anime", Toast.LENGTH_LONG).show();
 			
 			break;
-		case R.id.abs__home:
-			return true;
+//		case R.id.abs__home: //R.id.abs_home cannot be resolved
+//			return true;
 		default:
 			// return super.onHandleActionBarItemClick(item, position);
 		}

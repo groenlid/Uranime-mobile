@@ -121,8 +121,8 @@ public class SearchActivity extends BaseActivity implements ActionBar.OnNavigati
 			g.new SearchService(this).execute(Constants.REST_GENRE, 
 					GenreBrowseFragment.TYPE_GENRE);
 			break;
-		case R.id.abs__home:
-			return true;
+//		case R.id.abs__home: //R.id.abs__home cannot be resolved
+//			return true;
 		default:
 			// return super.onHandleActionBarItemClick(item, position);
 		}
